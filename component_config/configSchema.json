@@ -1,0 +1,70 @@
+{
+    "type": "object",
+    "title": "extractor configuration",
+    "required": [
+        "#token",
+        "endpoints"
+    ],
+    "properties": {
+        "#token": {
+            "type": "string",
+            "title": "Token",
+            "propertyOrder": 100
+        },
+        "endpoints": {
+            "type": "object",
+            "title": "Endpoints",
+            "propertyOrder": 200,
+            "properties": {
+                "users": {
+                    "type": "boolean",
+                    "title": "Users",
+                    "format": "checkbox",
+                    "propertyOrder": 100
+                },
+                "users_details": {
+                  "type": "boolean",
+                  "title": "Users Details",
+                  "format": "checkbox",
+                  "propertyOrder": 150
+              },
+                "projects": {
+                    "type": "boolean",
+                    "title": "Projects",
+                    "format": "checkbox",
+                    "propertyOrder": 200
+                },
+                "projects_sections": {
+                    "type": "boolean",
+                    "title": "Project Sections",
+                    "format": "checkbox",
+                    "propertyOrder": 300
+                },
+                "projects_tasks": {
+                    "type": "boolean",
+                    "title": "Project Tasks",
+                    "format": "checkbox",
+                    "propertyOrder": 400
+                },
+                "projects_tasks_details": {
+                    "type": "boolean",
+                    "title": "Project Task Details",
+                    "format": "checkbox",
+                    "propertyOrder": 500
+                },
+                "projects_tasks_subtasks": {
+                    "type": "boolean",
+                    "title": "Project Tasks' Subtasks",
+                    "format": "checkbox",
+                    "propertyOrder": 600
+                },
+                "projects_tasks_stories": {
+                    "type": "boolean",
+                    "title": "Project Tasks' Stories",
+                    "format": "checkbox",
+                    "propertOrder": 700
+                }
+            }
+        }
+    }
+}
