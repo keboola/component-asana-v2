@@ -569,6 +569,12 @@
                     "mapping": {
                         "destination": "section_name"
                     }
+                },
+                "parent_gid": {
+                    "type": "user",
+                    "mapping": {
+                        "destination": "task_id"
+                    }
                 }
             }
         },

@@ -34,6 +34,14 @@ class MappingParser():
                     value = self._fetch_value(row=row, key=m)
                     row_json[key] = value
 
+                    # if self.endpoint == 'task_details-memberships':
+                    #     print('ROW: {}'.format(row))
+                    #     print('m: {}'.format(m))
+                    #     print('key: {}'.format(key))
+                    #     print('value:{}'.format(value))
+                    #     print(row['project']['gid'])
+                    #     sys.exit(0)
+
                 elif col_type == 'user':
                     key = self.mapping[m]['mapping']['destination']
                     value = self.parent_key
@@ -44,6 +52,12 @@ class MappingParser():
                     mapping = self.mapping[m]['tableMapping']
                     parent_key = row['gid']
                     data = self._fetch_value(row=row, key=m)
+                    # if m == 'memberships':
+                    #     print(row[m])
+                    #     print(parent_key)
+                    #     print(mapping)
+                    #     print(data)
+                    #     # sys.exit(0)
 
                     MappingParser(
                         destination=self.destination,
@@ -60,20 +74,26 @@ class MappingParser():
         Fetching value from a nested object
         '''
         key_list = key.split('.')
+        # print(key_list)
+        # print(row)
         value = row
-        for k in key_list:
-            value = row[k]
+        try:
+            for k in key_list:
+                value = row[k]
+        except Exception:
+            value = ''
 
         return value
 
     def _output(self, df_json, filename):
         output_filename = f'{self.destination}/{filename}.csv'
-        data_output = pd.DataFrame(df_json, dtype=str)
-        if not os.path.isfile(output_filename):
-            with open(output_filename, 'a') as b:
-                data_output.to_csv(b, index=False)
-            b.close()
-        else:
-            with open(output_filename, 'a') as b:
-                data_output.to_csv(b, index=False, header=False)
-            b.close()
+        if df_json:
+            data_output = pd.DataFrame(df_json, dtype=str)
+            if not os.path.isfile(output_filename):
+                with open(output_filename, 'a') as b:
+                    data_output.to_csv(b, index=False)
+                b.close()
+            else:
+                with open(output_filename, 'a') as b:
+                    data_output.to_csv(b, index=False, header=False)
+                b.close()

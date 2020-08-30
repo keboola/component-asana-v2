@@ -171,7 +171,13 @@ class Component(KBCEnvHandler):
                 endpoint_url = REQUEST_MAP[endpoint]['endpoint']
                 endpoint_url = endpoint_url.replace(
                     '{'+f'{required_endpoint}'+'_id}', i_id)
-                data = self.get_request(endpoint=endpoint_url)
+
+                tmp_params = {
+                    'modified_since': '2020-08-01'
+                }
+
+                data = self.get_request(
+                    endpoint=endpoint_url, params=tmp_params)
                 # self._output(df_json=data, filename=endpoint)
                 MappingParser(
                     destination=f'{self.tables_out_path}/',
