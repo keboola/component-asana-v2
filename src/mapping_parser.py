@@ -1,11 +1,12 @@
 import os
+import json
 import logging  # noqa
 import sys  # noqa
 import pandas as pd
 
 
 class MappingParser():
-    def __init__(self, destination, endpoint, endpoint_data, mapping, parent_key=None):
+    def __init__(self, destination, endpoint, endpoint_data, mapping, parent_key=None, incremental=False):
         self.destination = destination
         self.endpoint = endpoint
         self.endpoint_data = endpoint_data
@@ -21,7 +22,10 @@ class MappingParser():
 
         # Parsing
         self.parse()
-        self._output(df_json=self.output, filename=self.endpoint)
+        if self.output:
+            self._output(df_json=self.output, filename=self.endpoint)
+            self._product_manifest(
+                filename=self.endpoint, incremental=incremental, primary_key=self.primary_key)
 
     def parse(self):
         for row in self.endpoint_data:
@@ -33,6 +37,10 @@ class MappingParser():
                     # value = row[m]
                     value = self._fetch_value(row=row, key=m)
                     row_json[key] = value
+
+                    # Primary key for incremental load
+                    if "primaryKey" in self.mapping[m]['mapping']:
+                        self.primary_key.append(key)
 
                     # if self.endpoint == 'task_details-memberships':
                     #     print('ROW: {}'.format(row))
@@ -46,6 +54,9 @@ class MappingParser():
                     key = self.mapping[m]['mapping']['destination']
                     value = self.parent_key
                     row_json[key] = value
+
+                    # Primary key for incremental load
+                    self.primary_key.append(key)
 
                 elif col_type == 'table':
                     endpoint = self.mapping[m]['destination']
@@ -97,3 +108,13 @@ class MappingParser():
                 with open(output_filename, 'a') as b:
                     data_output.to_csv(b, index=False, header=False)
                 b.close()
+
+    def _product_manifest(self, filename, incremental, primary_key):
+        manifest_filename = f'{self.destination}/{filename}.csv.manifest'
+        manifest = {
+            'incremental': incremental,
+            'primary_key': primary_key,
+        }
+
+        with open(manifest_filename, 'w') as file_out:
+            json.dump(manifest, file_out)

@@ -3,6 +3,7 @@
     "title": "extractor configuration",
     "required": [
         "#token",
+        "incremental_load",
         "endpoints"
     ],
     "properties": {
@@ -11,8 +12,24 @@
             "title": "Token",
             "propertyOrder": 100
         },
+        "incremental_load": {
+            "type": "boolean",
+            "title": "Incremental Load",
+            "propertyOrder": 200
+        },
         "endpoints": {
             "type": "object",
+            "required": [
+                "users",
+                "users_details",
+                "projects",
+                "archived_projects",
+                "projects_sections",
+                "projects_tasks",
+                "projects_tasks_details",
+                "projects_tasks_subtasks",
+                "projects_tasks_stories"
+            ],
             "title": "Endpoints",
             "propertyOrder": 200,
             "properties": {
@@ -23,16 +40,22 @@
                     "propertyOrder": 100
                 },
                 "users_details": {
-                  "type": "boolean",
-                  "title": "Users Details",
-                  "format": "checkbox",
-                  "propertyOrder": 150
-              },
+                    "type": "boolean",
+                    "title": "Users Details",
+                    "format": "checkbox",
+                    "propertyOrder": 150
+                },
                 "projects": {
                     "type": "boolean",
                     "title": "Projects",
                     "format": "checkbox",
                     "propertyOrder": 200
+                },
+                "archived_projects": {
+                    "type": "boolean",
+                    "title": "Archived Projects",
+                    "format": "checkbox",
+                    "propertyOrder": 250
                 },
                 "projects_sections": {
                     "type": "boolean",

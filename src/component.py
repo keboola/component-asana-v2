@@ -20,10 +20,12 @@ from mapping_parser import MappingParser
 # configuration variables
 KEY_DEBUG = 'debug'
 KEY_TOKEN = '#token'
+KEY_INCREMENTAL_LOAD = 'incremental_load'
 KEY_ENDPOINTS = 'endpoints'
 
 MANDATORY_PARS = [
     KEY_ENDPOINTS,
+    KEY_INCREMENTAL_LOAD,
     KEY_TOKEN
 ]
 MANDATORY_IMAGE_PARS = []
@@ -81,6 +83,7 @@ REQUEST_ORDER = [
     'users',
     'users_details',
     'projects',
+    'archived_projects',
     'projects_sections',
     'projects_tasks',
     'projects_tasks_details',
@@ -124,11 +127,25 @@ class Component(KBCEnvHandler):
 
         params = self.cfg_params  # noqa
         self.token = params.get(KEY_TOKEN)
+        self.incremental = params.get(KEY_INCREMENTAL_LOAD)
+        state = self.get_state_file() if self.incremental and self.get_state_file() else {}
+        # Last run date
+        try:
+            self.last_run = state['component']['last_run']
+        except Exception:
+            self.last_run = None
+
         endpoints = params.get(KEY_ENDPOINTS)
+        now = datetime.datetime.now().strftime('%Y-%m-%d')        
 
         for r in REQUEST_ORDER:
             if r == 'workspaces' or endpoints[r]:
                 self.fetch(endpoint=r)
+
+        if self.incremental:
+            state['component'] = {}
+            state['component']['last_run'] = now
+            self.write_state_file(state)
 
         logging.info("Extraction finished")
 
@@ -156,6 +173,19 @@ class Component(KBCEnvHandler):
         Processing/Fetching data
         '''
 
+        logging.info(f'Requesting [{endpoint}]...')
+
+        request_params = {}
+        if endpoint == 'archived_projects':
+            endpoint = 'projects'
+            request_params['archived'] = True
+        elif endpoint == 'projects':
+            request_params['archived'] = False
+        
+        # Incremental load
+        if self.incremental and self.last_run:
+            request_params['modified_since'] = self.last_run
+
         required_endpoint = REQUEST_MAP[endpoint].get('required')
         endpoint_mapping = MAPPINGS[REQUEST_MAP[endpoint]['mapping']]
         # Checking if parent endpoint is required
@@ -163,7 +193,6 @@ class Component(KBCEnvHandler):
             self.fetch(
                 required_endpoint) if required_endpoint not in REQUESTED_ENDPOINTS else ''
 
-        logging.info(f'Requesting [{endpoint}]...')
         # For endpoints required data from parent endpoint
         if required_endpoint:
             for i in ROOT_ENDPOINTS[required_endpoint]:
@@ -172,12 +201,8 @@ class Component(KBCEnvHandler):
                 endpoint_url = endpoint_url.replace(
                     '{'+f'{required_endpoint}'+'_id}', i_id)
 
-                tmp_params = {
-                    'modified_since': '2020-08-01'
-                }
-
                 data = self.get_request(
-                    endpoint=endpoint_url, params=tmp_params)
+                    endpoint=endpoint_url, params=request_params)
                 # self._output(df_json=data, filename=endpoint)
                 MappingParser(
                     destination=f'{self.tables_out_path}/',
