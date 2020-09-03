@@ -136,7 +136,7 @@ class Component(KBCEnvHandler):
             self.last_run = None
 
         endpoints = params.get(KEY_ENDPOINTS)
-        now = datetime.datetime.now().strftime('%Y-%m-%d')        
+        now = datetime.datetime.now().strftime('%Y-%m-%d')
 
         for r in REQUEST_ORDER:
             if r == 'workspaces' or endpoints[r]:
@@ -181,7 +181,7 @@ class Component(KBCEnvHandler):
             request_params['archived'] = True
         elif endpoint == 'projects':
             request_params['archived'] = False
-        
+
         # Incremental load
         if self.incremental and self.last_run:
             request_params['modified_since'] = self.last_run
