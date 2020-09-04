@@ -1,1 +1,1 @@
-Testing functional sample extractor for purposes of the python component template. 
+Allows users to extract dtails and status of your projects and tasks.

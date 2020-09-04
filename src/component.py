@@ -4,8 +4,6 @@ Template Component main class.
 '''
 
 import logging
-import logging_gelf.handlers
-import logging_gelf.formatters
 import sys
 import os  # noqa
 import datetime  # noqa
@@ -111,19 +109,16 @@ class Component(KBCEnvHandler):
         for library in disable_libraries:
             logging.getLogger(library).disabled = True
 
-        if self.cfg_params.get(KEY_DEBUG, False) is True:
-            logger = logging.getLogger()
-            logger.setLevel(level='DEBUG')
+        # override debug from config
+        if self.cfg_params.get(KEY_DEBUG):
+            debug = True
 
-        if 'KBC_LOGGER_ADDR' in os.environ and 'KBC_LOGGER_PORT' in os.environ:
-            logging_gelf_handler = logging_gelf.handlers.GELFTCPSocketHandler(
-                host=os.getenv('KBC_LOGGER_ADDR'), port=int(os.getenv('KBC_LOGGER_PORT')))
-            logging_gelf_handler.setFormatter(
-                logging_gelf.formatters.GELFFormatter(null_character=True))
-            logger.addHandler(logging_gelf_handler)
-
-            # remove default logging to stdout
-            logger.removeHandler(logger.handlers[0])
+        log_level = logging.DEBUG if debug else logging.INFO
+        # setup GELF if available
+        if os.getenv('KBC_LOGGER_ADDR', None):
+            self.set_gelf_logger(log_level)
+        else:
+            self.set_default_logger(log_level)
 
         try:
             self.validate_config()
@@ -140,7 +135,9 @@ class Component(KBCEnvHandler):
         params = self.cfg_params  # noqa
         self.token = params.get(KEY_TOKEN)
         self.incremental = params.get(KEY_INCREMENTAL_LOAD)
-        state = self.get_state_file() if self.incremental and self.get_state_file() else {}
+        state = self.get_state_file()
+        if self.incremental and not state:
+            state = {}
         # Last run date
         try:
             self.last_run = state['component']['last_run']
