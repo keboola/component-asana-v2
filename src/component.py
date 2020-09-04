@@ -109,9 +109,16 @@ class Component(KBCEnvHandler):
         for library in disable_libraries:
             logging.getLogger(library).disabled = True
 
-        if self.cfg_params.get(KEY_DEBUG, False) is True:
-            logger = logging.getLogger()
-            logger.setLevel(level='DEBUG')
+        # override debug from config
+        if self.cfg_params.get(KEY_DEBUG):
+            debug = True
+
+        log_level = logging.DEBUG if debug else logging.INFO
+        # setup GELF if available
+        if os.getenv('KBC_LOGGER_ADDR', None):
+            self.set_gelf_logger(log_level)
+        else:
+            self.set_default_logger(log_level)
 
         try:
             self.validate_config()
