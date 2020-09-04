@@ -124,7 +124,7 @@ class Component(KBCEnvHandler):
 
             # remove default logging to stdout
             logger.removeHandler(logger.handlers[0])
-            
+
         try:
             self.validate_config()
             self.validate_image_parameters(MANDATORY_IMAGE_PARS)
