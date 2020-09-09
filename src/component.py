@@ -94,7 +94,7 @@ REQUEST_ORDER = [
 with open('src/endpoint_mappings.json', 'r') as m:
     MAPPINGS = json.load(m)
 
-APP_VERSION = '0.0.1'
+APP_VERSION = '0.0.2'
 
 
 class Component(KBCEnvHandler):
@@ -169,13 +169,38 @@ class Component(KBCEnvHandler):
             'Content-Type': 'application/json'
         }
 
-        r = requests.get(url=request_url, headers=headers, params=params)
+        # Pagination parameters
+        if not params:
+            params = {}
+        params['limit'] = 100
+        request_loop = True
+        pagination_offset = ''
 
-        if r.status_code not in [200, 201]:
-            logging.error(f'Request issue: {r.json()}')
-            sys.exit(1)
+        data_out = []
+        while request_loop:
+            # If pagination parameter exist
+            if pagination_offset:
+                params['offset'] = pagination_offset
 
-        return r.json()['data']
+            r = requests.get(url=request_url, headers=headers, params=params)
+
+            if r.status_code not in [200, 201]:
+                logging.error(f'Request issue: {r.json()}')
+                sys.exit(1)
+
+            data_out = data_out + r.json()['data']
+
+            # Loop
+            if 'next_page' in r.json():
+                if r.json()['next_page']:
+                    pagination_offset = r.json()['next_page']['offset']
+                else:
+                    request_loop = False
+            else:
+                request_loop = False
+
+        # return r.json()['data']
+        return data_out
 
     def fetch(self, endpoint):
         '''
