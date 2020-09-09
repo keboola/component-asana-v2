@@ -188,7 +188,9 @@ class Component(KBCEnvHandler):
                 logging.error(f'Request issue: {r.json()}')
                 sys.exit(1)
 
-            data_out = data_out + r.json()['data']
+            requested_data = [r.json()['data']] if type(
+                r.json()['data']) == dict else r.json()['data']
+            data_out = data_out + requested_data
 
             # Loop
             if 'next_page' in r.json():
