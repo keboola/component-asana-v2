@@ -182,6 +182,7 @@ class Component(KBCEnvHandler):
             if pagination_offset:
                 params['offset'] = pagination_offset
 
+            logging.info(f'{endpoint} Parameters: {params}')
             r = requests.get(url=request_url, headers=headers, params=params)
 
             if r.status_code not in [200, 201]:
