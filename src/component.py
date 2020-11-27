@@ -208,7 +208,7 @@ class Component(KBCEnvHandler):
 
             if r.status_code in [401]:
                 logging.error(
-                    f'Authorization failed. Please validate your credentials.')
+                    'Authorization failed. Please validate your credentials.')
                 sys.exit(1)
             elif r.status_code in [429]:
                 logging.error(f'Request issue: {r.json()}')
