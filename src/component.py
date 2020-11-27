@@ -30,12 +30,6 @@ MANDATORY_PARS = [
 ]
 MANDATORY_IMAGE_PARS = []
 
-# Logging
-# logging.basicConfig(
-#     level=logging.INFO,
-#     format='%(asctime)s - %(levelname)-8s : [line:%(lineno)3s] %(message)s',
-#     datefmt="%Y-%m-%d %H:%M:%S")
-
 BASE_URL = 'https://app.asana.com/api/1.0/'
 REQUEST_MAP = {
     'workspaces': {
@@ -94,7 +88,7 @@ REQUEST_ORDER = [
 with open('src/endpoint_mappings.json', 'r') as m:
     MAPPINGS = json.load(m)
 
-APP_VERSION = '0.0.2'
+APP_VERSION = '0.0.3'
 
 
 class Component(KBCEnvHandler):
@@ -182,7 +176,7 @@ class Component(KBCEnvHandler):
             if pagination_offset:
                 params['offset'] = pagination_offset
 
-            logging.info(f'{endpoint} Parameters: {params}')
+            logging.debug(f'{endpoint} Parameters: {params}')
             r = requests.get(url=request_url, headers=headers, params=params)
 
             if r.status_code not in [200, 201]:
