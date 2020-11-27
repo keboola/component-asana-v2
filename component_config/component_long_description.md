@@ -1,6 +1,3 @@
-# Asana Extractor
-Asana extractor allows you to extract dtails and status of your projects and tasks.
-
 ## To obtain an API Key ##
 1. Login to [Asana](https://app.asana.com/)
 2. Click on your account icon at the top right corner of the page

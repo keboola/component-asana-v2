@@ -1,1 +1,1 @@
-Allows users to extract dtails and status of your projects and tasks.
+Allows users to extract details and status of your projects and tasks.
