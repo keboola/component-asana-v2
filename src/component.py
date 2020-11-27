@@ -138,6 +138,8 @@ class Component(KBCEnvHandler):
         except Exception:
             self.last_run = None
 
+        # Validate user inputs
+
         endpoints = params.get(KEY_ENDPOINTS)
         now = datetime.datetime.now().strftime('%Y-%m-%d')
 
@@ -151,6 +153,29 @@ class Component(KBCEnvHandler):
             self.write_state_file(state)
 
         logging.info("Extraction finished")
+
+    def validate_user_inputs(self, params):
+        '''
+        Validating user inputs
+        '''
+
+        # Validate if configuration is empty
+        if not params:
+            logging.error('Your configurations are missing.')
+
+        # Validate if nthe API token is missing
+        if params[KEY_TOKEN] == '':
+            logging.error('Your API token is missing.')
+
+        # Validate if any endpoints is selected
+        endpoint_selected = 0
+        for i in params[KEY_ENDPOINTS]:
+            if params[KEY_ENDPOINTS][i]:
+                endpoint_selected += 1
+
+        if endpoint_selected == 0:
+            logging.error('Please select at least one endpoint to extract.')
+            sys.exit(1)
 
     def get_request(self, endpoint, params=None):
         '''
@@ -179,8 +204,16 @@ class Component(KBCEnvHandler):
             logging.debug(f'{endpoint} Parameters: {params}')
             r = requests.get(url=request_url, headers=headers, params=params)
 
-            if r.status_code not in [200, 201]:
+            if r.status_code in [401]:
+                logging.error(
+                    f'Authorization failed. Please validate your credentials.')
+                sys.exit(1)
+            elif r.status_code in [429]:
                 logging.error(f'Request issue: {r.json()}')
+                logging.error('Please contact support')
+                sys.exit(1)
+            elif r.status_code not in [200, 201]:
+                logging.error(f'Request Failed: {r.json()}')
                 sys.exit(1)
 
             requested_data = [r.json()['data']] if type(
@@ -196,7 +229,6 @@ class Component(KBCEnvHandler):
             else:
                 request_loop = False
 
-        # return r.json()['data']
         return data_out
 
     def fetch(self, endpoint):
@@ -219,6 +251,7 @@ class Component(KBCEnvHandler):
 
         required_endpoint = REQUEST_MAP[endpoint].get('required')
         endpoint_mapping = MAPPINGS[REQUEST_MAP[endpoint]['mapping']]
+
         # Checking if parent endpoint is required
         if required_endpoint:
             self.fetch(
