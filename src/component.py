@@ -139,7 +139,9 @@ class Component(KBCEnvHandler):
             self.last_run = None
 
         # Validate user inputs
+        self.validate_user_inputs(params)
 
+        # User input parameters
         endpoints = params.get(KEY_ENDPOINTS)
         now = datetime.datetime.now().strftime('%Y-%m-%d')
 
