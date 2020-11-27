@@ -164,10 +164,12 @@ class Component(KBCEnvHandler):
         # Validate if configuration is empty
         if not params:
             logging.error('Your configurations are missing.')
+            sys.exit(1)
 
         # Validate if nthe API token is missing
         if params[KEY_TOKEN] == '':
             logging.error('Your API token is missing.')
+            sys.exit(1)
 
         # Validate if any endpoints is selected
         endpoint_selected = 0
