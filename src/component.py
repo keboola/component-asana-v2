@@ -149,10 +149,11 @@ class Component(KBCEnvHandler):
             if r == 'workspaces' or endpoints[r]:
                 self.fetch(endpoint=r, incremental=self.incremental)
 
-        if self.incremental:
-            state['component'] = {}
-            state['component']['last_run'] = now
-            self.write_state_file(state)
+        # Always storing the last extraction date
+        # if self.incremental:
+        state['component'] = {}
+        state['component']['last_run'] = now
+        self.write_state_file(state)
 
         logging.info("Extraction finished")
 
