@@ -147,7 +147,7 @@ class Component(KBCEnvHandler):
 
         for r in REQUEST_ORDER:
             if r == 'workspaces' or endpoints[r]:
-                self.fetch(endpoint=r)
+                self.fetch(endpoint=r, incremental=self.incremental)
 
         if self.incremental:
             state['component'] = {}
@@ -235,7 +235,7 @@ class Component(KBCEnvHandler):
 
         return data_out
 
-    def fetch(self, endpoint):
+    def fetch(self, endpoint, incremental):
         '''
         Processing/Fetching data
         '''
@@ -259,7 +259,7 @@ class Component(KBCEnvHandler):
         # Checking if parent endpoint is required
         if required_endpoint:
             self.fetch(
-                required_endpoint) if required_endpoint not in REQUESTED_ENDPOINTS else ''
+                required_endpoint, incremental=self.incremental) if required_endpoint not in REQUESTED_ENDPOINTS else ''
 
         # For endpoints required data from parent endpoint
         if required_endpoint:
@@ -278,7 +278,8 @@ class Component(KBCEnvHandler):
                     endpoint=REQUEST_MAP[endpoint]['mapping'],
                     endpoint_data=data,
                     mapping=endpoint_mapping,
-                    parent_key=i_id
+                    parent_key=i_id,
+                    incremental=incremental
                 )
 
                 # Saving endpoints that are parent
@@ -287,13 +288,14 @@ class Component(KBCEnvHandler):
         else:
             endpoint_url = REQUEST_MAP[endpoint]['endpoint']
             data = self.get_request(endpoint=endpoint_url)
-            # self._output(df_json=data, filename=endpoint)
+
             MappingParser(
                 destination=f'{self.tables_out_path}/',
                 # endpoint=endpoint,
                 endpoint=REQUEST_MAP[endpoint]['mapping'],
                 endpoint_data=data,
-                mapping=endpoint_mapping
+                mapping=endpoint_mapping,
+                incremental=incremental
             )
 
             # Saving endpoints that are parent

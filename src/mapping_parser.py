@@ -24,7 +24,7 @@ class MappingParser():
         self.parse()
         if self.output:
             self._output(df_json=self.output, filename=self.endpoint)
-            self._product_manifest(
+            self._produce_manifest(
                 filename=self.endpoint, incremental=incremental, primary_key=self.primary_key)
 
     def parse(self):
@@ -39,16 +39,8 @@ class MappingParser():
                     row_json[key] = value
 
                     # Primary key for incremental load
-                    if "primaryKey" in self.mapping[m]['mapping']:
+                    if "primaryKey" in self.mapping[m]['mapping'] and key not in self.primary_key:
                         self.primary_key.append(key)
-
-                    # if self.endpoint == 'task_details-memberships':
-                    #     print('ROW: {}'.format(row))
-                    #     print('m: {}'.format(m))
-                    #     print('key: {}'.format(key))
-                    #     print('value:{}'.format(value))
-                    #     print(row['project']['gid'])
-                    #     sys.exit(0)
 
                 elif col_type == 'user':
                     key = self.mapping[m]['mapping']['destination']
@@ -56,19 +48,14 @@ class MappingParser():
                     row_json[key] = value
 
                     # Primary key for incremental load
-                    self.primary_key.append(key)
+                    self.primary_key.append(
+                        key) if key not in self.primary_key else ''
 
                 elif col_type == 'table':
                     endpoint = self.mapping[m]['destination']
                     mapping = self.mapping[m]['tableMapping']
                     parent_key = row['gid']
                     data = self._fetch_value(row=row, key=m)
-                    # if m == 'memberships':
-                    #     print(row[m])
-                    #     print(parent_key)
-                    #     print(mapping)
-                    #     print(data)
-                    #     # sys.exit(0)
 
                     MappingParser(
                         destination=self.destination,
@@ -85,9 +72,8 @@ class MappingParser():
         Fetching value from a nested object
         '''
         key_list = key.split('.')
-        # print(key_list)
-        # print(row)
         value = row
+
         try:
             for k in key_list:
                 value = row[k]
@@ -109,7 +95,7 @@ class MappingParser():
                     data_output.to_csv(b, index=False, header=False)
                 b.close()
 
-    def _product_manifest(self, filename, incremental, primary_key):
+    def _produce_manifest(self, filename, incremental, primary_key):
         manifest_filename = f'{self.destination}/{filename}.csv.manifest'
         manifest = {
             'incremental': incremental,

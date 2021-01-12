@@ -73,19 +73,19 @@
                 },
                 "projects_tasks_details": {
                     "type": "boolean",
-                    "title": "Project Task Details",
+                    "title": "Project Tasks Details",
                     "format": "checkbox",
                     "propertyOrder": 500
                 },
                 "projects_tasks_subtasks": {
                     "type": "boolean",
-                    "title": "Project Tasks' Subtasks",
+                    "title": "Project Tasks Subtasks",
                     "format": "checkbox",
                     "propertyOrder": 600
                 },
                 "projects_tasks_stories": {
                     "type": "boolean",
-                    "title": "Project Tasks' Stories",
+                    "title": "Project Tasks Stories",
                     "format": "checkbox",
                     "propertOrder": 700
                 }
