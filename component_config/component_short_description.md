@@ -1,1 +1,1 @@
-Allows users to extract details and status of your projects and tasks.
+Asana is a web and mobile application designed to help teams organize, track, and manage their work

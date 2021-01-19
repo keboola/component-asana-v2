@@ -1,3 +1,11 @@
+## To obtain an API Key ##
+1. Login to [Asana](https://app.asana.com/)
+2. Click on your account icon at the top right corner of the page
+3. Click *My Profile Settings...*.
+4. Click on *Apps* tab.
+5. Click on *Manage Developer Apps*.
+6. Click on *\+ Create New Personal Access Token*.
+
 ## Configuration Parameters
 1. Token
 2. Incremental Load

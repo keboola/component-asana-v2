@@ -68,7 +68,8 @@ ROOT_ENDPOINTS = {
     'workspaces': [],
     'users': [],
     'projects': [],
-    'projects_tasks': []
+    'projects_tasks': [],
+    'tasks': []
 }
 
 REQUESTED_ENDPOINTS = []
@@ -286,6 +287,7 @@ class Component(KBCEnvHandler):
                 # Saving endpoints that are parent
                 if endpoint in ROOT_ENDPOINTS:
                     ROOT_ENDPOINTS[endpoint] = ROOT_ENDPOINTS[endpoint] + data
+
         else:
             endpoint_url = REQUEST_MAP[endpoint]['endpoint']
             data = self.get_request(endpoint=endpoint_url)

@@ -7,6 +7,7 @@ import pandas as pd
 
 class MappingParser():
     def __init__(self, destination, endpoint, endpoint_data, mapping, parent_key=None, incremental=False):
+
         self.destination = destination
         self.endpoint = endpoint
         self.endpoint_data = endpoint_data
