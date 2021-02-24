@@ -4,8 +4,7 @@
     "required": [
         "#token",
         "incremental_load",
-        "endpoints",
-        "project_id"
+        "endpoints"
     ],
     "properties": {
         "#token": {
@@ -26,7 +25,6 @@
                 "users",
                 "users_details",
                 "projects",
-                "user_defined_projects",
                 "archived_projects",
                 "projects_sections",
                 "projects_tasks",
@@ -54,12 +52,6 @@
                     "title": "Projects",
                     "format": "checkbox",
                     "propertyOrder": 200
-                },
-                "user_defined_projects": {
-                    "type": "boolean",
-                    "title": "Projects - User Defined",
-                    "format": "checkbox",
-                    "propertyOrder": 210
                 },
                 "archived_projects": {
                     "type": "boolean",
@@ -98,12 +90,6 @@
                     "propertOrder": 700
                 }
             }
-        },
-        "project_id": {
-            "type": "string",
-            "title": "Project IDs",
-            "propertyOrder": 300,
-            "description": "Required when endpoint [Projects - User Defined] is selected. Please enter your values with comma delimiter."
         }
     }
 }

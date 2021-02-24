@@ -22,6 +22,7 @@ KEY_DEBUG = 'debug'
 KEY_TOKEN = '#token'
 KEY_INCREMENTAL_LOAD = 'incremental_load'
 KEY_ENDPOINTS = 'endpoints'
+KEY_PRODUCT_ID = 'product_id'
 
 MANDATORY_PARS = [
     KEY_ENDPOINTS,
@@ -41,6 +42,9 @@ REQUEST_MAP = {
     'users_details': {
         'endpoint': 'users/{users_id}',
         'required': 'users', 'mapping': 'users_details'},
+    'user_defined_projects': {
+        'endpoint': 'projects/{projects_id}',
+        'required': 'projects', 'mapping': 'projects_details'},
     'projects': {
         'endpoint': 'workspaces/{workspaces_id}/projects',
         'required': 'workspaces', 'mapping': 'projects'},
@@ -77,6 +81,7 @@ REQUEST_ORDER = [
     'workspaces',
     'users',
     'users_details',
+    'user_defined_projects',
     'projects',
     'archived_projects',
     'projects_sections',
@@ -89,7 +94,7 @@ REQUEST_ORDER = [
 with open('src/endpoint_mappings.json', 'r') as m:
     MAPPINGS = json.load(m)
 
-APP_VERSION = '0.0.4'
+APP_VERSION = '0.0.5'
 
 
 class Component(KBCEnvHandler):
@@ -135,11 +140,13 @@ class Component(KBCEnvHandler):
             state = {}
         # Last run date
         try:
-            self.last_run = state['component']['last_run']
+            self.last_run = state['last_run']
+            logging.info(f'Requesting from: {self.last_run}')
         except Exception:
             self.last_run = None
 
         # Validate user inputs
+        # & prep parameters for user_defined_projects
         self.validate_user_inputs(params)
 
         # User input parameters
@@ -152,8 +159,8 @@ class Component(KBCEnvHandler):
 
         # Always storing the last extraction date
         # if self.incremental:
-        state['component'] = {}
-        state['component']['last_run'] = now
+        state = {}
+        state['last_run'] = now
         self.write_state_file(state)
 
         logging.info("Extraction finished")
@@ -182,6 +189,22 @@ class Component(KBCEnvHandler):
         if endpoint_selected == 0:
             logging.error('Please select at least one endpoint to extract.')
             sys.exit(1)
+
+        # Validating if project_ids are defined when
+        # endpoint [user_defined_projects] is defined
+        if params[KEY_ENDPOINTS]['user_defined_projects']:
+            if params[KEY_PRODUCT_ID] == '':
+                logging.error(
+                    'Parameters are required when [Projects - User Defined] is selected. Please '
+                    'define your project IDs.')
+                sys.exit(1)
+            else:
+                # Priortizing user_defined_projects endpoint
+                REQUEST_ORDER.remove('projects')
+                REQUEST_ORDER.remove('archived_projects')
+
+                REQUESTED_ENDPOINTS.append('projects')
+                self._delimit_string(params[KEY_PRODUCT_ID], 'projects')
 
     def get_request(self, endpoint, params=None):
         '''
@@ -244,6 +267,7 @@ class Component(KBCEnvHandler):
 
         logging.info(f'Requesting [{endpoint}]...')
 
+        # Prep-ing request parameters
         request_params = {}
         if endpoint == 'archived_projects':
             endpoint = 'projects'
@@ -255,6 +279,7 @@ class Component(KBCEnvHandler):
         if self.incremental and self.last_run:
             request_params['modified_since'] = self.last_run
 
+        # Inputs required for the parser and requests
         required_endpoint = REQUEST_MAP[endpoint].get('required')
         endpoint_mapping = MAPPINGS[REQUEST_MAP[endpoint]['mapping']]
 
@@ -304,7 +329,23 @@ class Component(KBCEnvHandler):
             # Saving endpoints that are parent
             if endpoint in ROOT_ENDPOINTS:
                 ROOT_ENDPOINTS[endpoint] = ROOT_ENDPOINTS[endpoint] + data
+
         REQUESTED_ENDPOINTS.append(endpoint)
+
+    def _delimit_string(self, id_str, endpoint):
+        '''
+        Delimiting the list of ids and add them into the respective
+        endpoint to bypass original request order
+        '''
+
+        id_str = id_str.replace(' ', '')
+        id_list = id_str.split(',')
+
+        for i in id_list:
+            tmp = {'gid': i}
+            ROOT_ENDPOINTS[endpoint].append(tmp)
+
+        print(ROOT_ENDPOINTS)
 
     def _output(self, df_json, filename):
         output_filename = f'{self.tables_out_path}/{filename}.csv'

@@ -6,7 +6,7 @@
 5. Click on *Manage Developer Apps*.
 6. Click on *\+ Create New Personal Access Token*.
 
-## Configuration Parameters
+## Configuration
 1. Token
 2. Incremental Load
     - *Enable* : The component will start extraction from the last persisted extraction date and load results into respective tables incrementally.
@@ -15,9 +15,16 @@
     1. Users
     2. Users Details
     3. Projects
-    4. Archived Projects
-    5. Project Sections
-    6. Project Tasks
-    7. Project Tasks Details
-    8. Project Tasks Subtasks
-    9. Project Tasks Stories
+    4. Projects - User Defined
+    5. Archived Projects
+    6. Project Sections
+    7. Project Tasks
+    8. Project Tasks Details
+    9. Project Tasks Subtasks
+    10. Project Tasks Stories
+
+    **Notes: If `Projects - User Defined` is selected, the component will NOT fetch data from `Projects` endpoint and `Archived Projects` endpoint.
+
+4. Project IDs
+    - Required when endpoint `Projects - User Defined` is selected
+    - Please enter your values with comma delimiter.
