@@ -22,7 +22,7 @@ KEY_DEBUG = 'debug'
 KEY_TOKEN = '#token'
 KEY_INCREMENTAL_LOAD = 'incremental_load'
 KEY_ENDPOINTS = 'endpoints'
-KEY_PRODUCT_ID = 'product_id'
+KEY_PROJECT_ID = 'project_id'
 
 MANDATORY_PARS = [
     KEY_ENDPOINTS,
@@ -193,7 +193,7 @@ class Component(KBCEnvHandler):
         # Validating if project_ids are defined when
         # endpoint [user_defined_projects] is defined
         if params[KEY_ENDPOINTS]['user_defined_projects']:
-            if params[KEY_PRODUCT_ID] == '':
+            if params[KEY_PROJECT_ID] == '':
                 logging.error(
                     'Parameters are required when [Projects - User Defined] is selected. Please '
                     'define your project IDs.')
@@ -204,7 +204,7 @@ class Component(KBCEnvHandler):
                 REQUEST_ORDER.remove('archived_projects')
 
                 REQUESTED_ENDPOINTS.append('projects')
-                self._delimit_string(params[KEY_PRODUCT_ID], 'projects')
+                self._delimit_string(params[KEY_PROJECT_ID], 'projects')
 
     def get_request(self, endpoint, params=None):
         '''
