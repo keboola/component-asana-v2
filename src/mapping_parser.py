@@ -31,8 +31,10 @@ class MappingParser():
     def parse(self):
         for row in self.endpoint_data:
             row_json = {}
+
             for m in self.mapping:
                 col_type = self.mapping[m].get('type')
+
                 if col_type == 'column' or not col_type:
                     key = self.mapping[m]['mapping']['destination']
                     # value = row[m]
@@ -77,7 +79,8 @@ class MappingParser():
 
         try:
             for k in key_list:
-                value = row[k]
+                value = value[k]
+
         except Exception:
             value = ''
 

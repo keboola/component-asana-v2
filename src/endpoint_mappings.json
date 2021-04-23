@@ -129,7 +129,8 @@
                 "gid": {
                     "type": "column",
                     "mapping": {
-                        "destination": "id"
+                        "destination": "id",
+                        "primaryKey": true
                     }
                 },
                 "name": {
@@ -159,7 +160,8 @@
                 "gid": {
                     "type": "column",
                     "mapping": {
-                        "destination": "id"
+                        "destination": "id",
+                        "primaryKey": true
                     }
                 },
                 "custom_field.gid": {
@@ -205,7 +207,8 @@
                         "gid": {
                             "type": "column",
                             "mapping": {
-                                "destination": "id"
+                                "destination": "id",
+                                "primaryKey": true
                             }
                         },
                         "name": {
@@ -249,7 +252,8 @@
                 "gid": {
                     "type": "column",
                     "mapping": {
-                        "destination": "id"
+                        "destination": "id",
+                        "primaryKey": true
                     }
                 },
                 "name": {
@@ -361,7 +365,8 @@
                         "gid": {
                             "type": "column",
                             "mapping": {
-                                "destination": "id"
+                                "destination": "id",
+                                "primaryKey": true
                             }
                         },
                         "name": {
@@ -399,7 +404,8 @@
                 "gid": {
                     "type": "column",
                     "mapping": {
-                        "destination": "id"
+                        "destination": "id",
+                        "primaryKey": true
                     }
                 },
                 "enum_value.enabled": {
@@ -501,7 +507,8 @@
                 "gid": {
                     "type": "column",
                     "mapping": {
-                        "destination": "id"
+                        "destination": "id",
+                        "primaryKey": true
                     }
                 },
                 "name": {
@@ -525,7 +532,8 @@
                 "gid": {
                     "type": "column",
                     "mapping": {
-                        "destination": "id"
+                        "destination": "id",
+                        "primaryKey": true
                     }
                 },
                 "name": {
@@ -549,7 +557,8 @@
                 "project.gid": {
                     "type": "column",
                     "mapping": {
-                        "destination": "project_id"
+                        "destination": "project_id",
+                        "primaryKey": true
                     }
                 },
                 "project.name": {
@@ -561,7 +570,8 @@
                 "section.gid": {
                     "type": "column",
                     "mapping": {
-                        "destination": "section_id"
+                        "destination": "section_id",
+                        "primaryKey": true
                     }
                 },
                 "section.name": {

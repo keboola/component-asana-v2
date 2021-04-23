@@ -94,7 +94,7 @@ REQUEST_ORDER = [
 with open('src/endpoint_mappings.json', 'r') as m:
     MAPPINGS = json.load(m)
 
-APP_VERSION = '0.0.5'
+APP_VERSION = '0.0.6'
 
 
 class Component(KBCEnvHandler):
@@ -344,8 +344,6 @@ class Component(KBCEnvHandler):
         for i in id_list:
             tmp = {'gid': i}
             ROOT_ENDPOINTS[endpoint].append(tmp)
-
-        print(ROOT_ENDPOINTS)
 
     def _output(self, df_json, filename):
         output_filename = f'{self.tables_out_path}/{filename}.csv'
