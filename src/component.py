@@ -144,10 +144,13 @@ class Component(KBCEnvHandler):
         if self.incremental and not state:
             state = {}
         # Last run date
-        try:
-            self.last_run = state['last_run']
-            logging.info(f'Requesting from: {self.last_run}')
-        except Exception:
+        if self.incremental:
+            try:
+                self.last_run = state['last_run']
+                logging.info(f'Requesting from: {self.last_run}')
+            except Exception:
+                self.last_run = None
+        else:
             self.last_run = None
 
         # Validate user inputs
