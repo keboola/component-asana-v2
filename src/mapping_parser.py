@@ -15,6 +15,7 @@ class MappingParser():
         self.parent_key = parent_key
         self.output = []
         self.primary_key = []
+        self.incremental = incremental
 
         # Countermeasures for response coming in as DICT
         if type(self.endpoint_data) == dict:
@@ -26,7 +27,7 @@ class MappingParser():
         if self.output:
             self._output(df_json=self.output, filename=self.endpoint)
             self._produce_manifest(
-                filename=self.endpoint, incremental=incremental, primary_key=self.primary_key)
+                filename=self.endpoint, incremental=self.incremental, primary_key=self.primary_key)
 
     def parse(self):
         for row in self.endpoint_data:
@@ -65,7 +66,8 @@ class MappingParser():
                         endpoint=endpoint,
                         endpoint_data=data,
                         mapping=mapping,
-                        parent_key=parent_key
+                        parent_key=parent_key,
+                        incremental=self.incremental
                     )
 
             self.output.append(row_json)

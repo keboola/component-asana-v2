@@ -54,6 +54,9 @@ REQUEST_MAP = {
     'projects_sections': {
         'endpoint': 'projects/{projects_id}/sections',
         'required': 'projects', 'mapping': 'sections'},
+    "projects_sections_tasks": {
+        'endpoint': 'sections/{projects_sections_id}/tasks',
+        'required': 'projects_sections', 'mapping': 'section_tasks'},
     'projects_tasks': {
         'endpoint': 'projects/{projects_id}/tasks',
         'required': 'projects', 'mapping': 'tasks'},
@@ -72,6 +75,7 @@ ROOT_ENDPOINTS = {
     'workspaces': [],
     'users': [],
     'projects': [],
+    'projects_sections': [],
     'projects_tasks': [],
     'tasks': []
 }
@@ -85,6 +89,7 @@ REQUEST_ORDER = [
     'projects',
     'archived_projects',
     'projects_sections',
+    'projects_sections_tasks',
     'projects_tasks',
     'projects_tasks_details',
     'projects_tasks_subtasks',
@@ -94,7 +99,7 @@ REQUEST_ORDER = [
 with open('src/endpoint_mappings.json', 'r') as m:
     MAPPINGS = json.load(m)
 
-APP_VERSION = '0.0.6'
+APP_VERSION = '0.0.7'
 
 
 class Component(KBCEnvHandler):

@@ -29,6 +29,7 @@
                 "user_defined_projects",
                 "archived_projects",
                 "projects_sections",
+                "projects_sections_tasks",
                 "projects_tasks",
                 "projects_tasks_details",
                 "projects_tasks_subtasks",
@@ -73,6 +74,12 @@
                     "format": "checkbox",
                     "propertyOrder": 300
                 },
+                "projects_sections_tasks": {
+                    "type": "boolean",
+                    "title": "Project Sections Tasks",
+                    "format": "checkbox",
+                    "propertyOrder": 350
+                }, 
                 "projects_tasks": {
                     "type": "boolean",
                     "title": "Project Tasks",

@@ -297,6 +297,30 @@
             }
         }
     },
+    "section_tasks": {
+        "gid": {
+            "mapping": {
+                "destination": "id",
+                "primaryKey": true
+            }
+        },
+        "resource_type": {
+            "mapping": {
+                "destination": "resource_type"
+            }
+        },
+        "name": {
+            "mapping": {
+                "destination": "name"
+            }
+        },
+        "parent_gid": {
+            "type": "user",
+            "mapping": {
+                "destination": "section_id"
+            }
+        }
+    },
     "tasks": {
         "gid": {
             "mapping": {
