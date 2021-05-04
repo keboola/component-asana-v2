@@ -99,7 +99,7 @@ REQUEST_ORDER = [
 with open('src/endpoint_mappings.json', 'r') as m:
     MAPPINGS = json.load(m)
 
-APP_VERSION = '0.0.7'
+APP_VERSION = '0.0.8'
 
 
 class Component(KBCEnvHandler):
