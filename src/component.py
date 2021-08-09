@@ -99,7 +99,7 @@ REQUEST_ORDER = [
 with open('src/endpoint_mappings.json', 'r') as m:
     MAPPINGS = json.load(m)
 
-APP_VERSION = '0.0.8'
+APP_VERSION = '0.0.9'
 
 
 class Component(KBCEnvHandler):
@@ -251,6 +251,10 @@ class Component(KBCEnvHandler):
                 sys.exit(1)
             elif r.status_code not in [200, 201]:
                 logging.error(f'Request Failed: {r.json()}')
+
+                if 'errors' in r.json():
+                    for err in r.json()['errors']:
+                        logging.error(err['message']) if 'message' in err else ''
                 sys.exit(1)
 
             requested_data = [r.json()['data']] if type(
