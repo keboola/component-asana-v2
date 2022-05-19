@@ -10,6 +10,7 @@
     "properties": {
         "#token": {
             "type": "string",
+            "format": "password",
             "title": "Token",
             "propertyOrder": 100
         },
