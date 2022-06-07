@@ -16,7 +16,6 @@ from kbc.result import KBCTableDef  # noqa
 from kbc.result import ResultWriter  # noqa
 from mapping_parser import MappingParser
 
-
 # configuration variables
 KEY_DEBUG = 'debug'
 KEY_TOKEN = '#token'
@@ -99,7 +98,7 @@ REQUEST_ORDER = [
 with open('src/endpoint_mappings.json', 'r') as m:
     MAPPINGS = json.load(m)
 
-APP_VERSION = '0.0.9'
+APP_VERSION = '0.0.10'
 
 
 class Component(KBCEnvHandler):
@@ -219,7 +218,7 @@ class Component(KBCEnvHandler):
         Generic Get request
         '''
 
-        request_url = BASE_URL+endpoint
+        request_url = BASE_URL + endpoint
         headers = {
             'Authorization': f'Bearer {self.token}',
             'Content-Type': 'application/json'
@@ -246,11 +245,11 @@ class Component(KBCEnvHandler):
                     'Authorization failed. Please validate your credentials.')
                 sys.exit(1)
             elif r.status_code in [429]:
-                logging.error(f'Request issue: {r.json()}')
+                logging.error(f'Request issue:{r.status_code} {r.json()}')
                 logging.error('Please contact support')
                 sys.exit(1)
             elif r.status_code not in [200, 201]:
-                logging.error(f'Request Failed: {r.json()}')
+                logging.error(f'Request Failed: code - {r.status_code} :{r.json()}')
 
                 if 'errors' in r.json():
                     for err in r.json()['errors']:
@@ -306,7 +305,7 @@ class Component(KBCEnvHandler):
                 i_id = i['gid']
                 endpoint_url = REQUEST_MAP[endpoint]['endpoint']
                 endpoint_url = endpoint_url.replace(
-                    '{'+f'{required_endpoint}'+'_id}', i_id)
+                    '{' + f'{required_endpoint}' + '_id}', i_id)
 
                 data = self.get_request(
                     endpoint=endpoint_url, params=request_params)
