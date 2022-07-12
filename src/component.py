@@ -114,8 +114,7 @@ class Component(ComponentBase):
         self.token = params.get(KEY_TOKEN)
         self.last_run = None
         log_level = logging.DEBUG if debug_mode else logging.INFO
-
-        # set log
+        self.set_gelf_logger(log_level)
 
     def run(self):
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
