@@ -132,7 +132,7 @@ class Component(ComponentBase):
 
         # User input parameters
         endpoints = params.get(KEY_ENDPOINTS)
-        now = datetime.datetime.now().strftime('%Y-%m-%d')
+        now = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
 
         for r in REQUEST_ORDER:
             if r == 'workspaces' or endpoints[r]:
