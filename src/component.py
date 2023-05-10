@@ -133,6 +133,8 @@ class Component(ComponentBase):
         # User input parameters
         endpoints = params.get(KEY_ENDPOINTS)
         now = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+        if self.incremental:
+            logging.info(f"Timestamp used for incremental fetching: {now}")
 
         for r in REQUEST_ORDER:
             if r == 'workspaces' or endpoints[r]:
