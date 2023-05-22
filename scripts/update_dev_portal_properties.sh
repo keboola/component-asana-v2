@@ -35,21 +35,6 @@ else
     echo "configurationSchema is empty!"
 fi
 
-echo "Updating row config schema"
-value=`cat component_config/configRowSchema.json`
-echo "$value"
-if [ ! -z "$value" ]
-then
-    docker run --rm \
-            -e KBC_DEVELOPERPORTAL_USERNAME \
-            -e KBC_DEVELOPERPORTAL_PASSWORD \
-            quay.io/keboola/developer-portal-cli-v2:latest \
-            update-app-property ${KBC_DEVELOPERPORTAL_VENDOR} ${KBC_DEVELOPERPORTAL_APP} configurationRowSchema --value="$value"
-else
-    echo "configurationRowSchema is empty!"
-fi
-
-
 echo "Updating config description"
 
 value=`cat component_config/configuration_description.md`
