@@ -96,7 +96,7 @@
           "type": "boolean",
           "title": "Project Tasks Stories",
           "format": "checkbox",
-          "propertOrder": 700
+          "propertyOrder": 700
         }
       }
     },
@@ -104,6 +104,11 @@
       "type": "string",
       "title": "Project IDs",
       "propertyOrder": 300,
+      "options": {
+        "dependencies": {
+          "endpoints.user_defined_projects" : true
+        }
+      },
       "description": "Required when endpoint [Projects - User Defined] is selected. Please enter your values with comma delimiter."
     },
     "incremental_load": {
