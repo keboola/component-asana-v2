@@ -1,117 +1,136 @@
 {
-    "type": "object",
-    "title": "extractor configuration",
-    "required": [
-        "#token",
-        "incremental_load",
-        "endpoints",
-        "project_id"
-    ],
-    "properties": {
-        "#token": {
-            "type": "string",
-            "format": "password",
-            "title": "Token",
-            "propertyOrder": 100
+  "type": "object",
+  "title": "extractor configuration",
+  "required": [
+    "#token",
+    "incremental_load",
+    "endpoints",
+    "project_id"
+  ],
+  "properties": {
+    "#token": {
+      "type": "string",
+      "format": "password",
+      "title": "Token",
+      "propertyOrder": 100
+    },
+    "endpoints": {
+      "type": "object",
+      "required": [
+        "users",
+        "users_details",
+        "projects",
+        "user_defined_projects",
+        "archived_projects",
+        "projects_sections",
+        "projects_sections_tasks",
+        "projects_tasks",
+        "projects_tasks_details",
+        "projects_tasks_subtasks",
+        "projects_tasks_stories"
+      ],
+      "title": "Endpoints",
+      "propertyOrder": 300,
+      "properties": {
+        "users": {
+          "type": "boolean",
+          "title": "Users",
+          "format": "checkbox",
+          "propertyOrder": 100
         },
-        "incremental_load": {
-            "type": "boolean",
-            "title": "Incremental Load",
-            "default": false,
-            "format": "checkbox",
-            "propertyOrder": 200
+        "users_details": {
+          "type": "boolean",
+          "title": "Users Details",
+          "format": "checkbox",
+          "propertyOrder": 150
         },
-        "endpoints": {
-            "type": "object",
-            "required": [
-                "users",
-                "users_details",
-                "projects",
-                "user_defined_projects",
-                "archived_projects",
-                "projects_sections",
-                "projects_sections_tasks",
-                "projects_tasks",
-                "projects_tasks_details",
-                "projects_tasks_subtasks",
-                "projects_tasks_stories"
-            ],
-            "title": "Endpoints",
-            "propertyOrder": 300,
-            "properties": {
-                "users": {
-                    "type": "boolean",
-                    "title": "Users",
-                    "format": "checkbox",
-                    "propertyOrder": 100
-                },
-                "users_details": {
-                    "type": "boolean",
-                    "title": "Users Details",
-                    "format": "checkbox",
-                    "propertyOrder": 150
-                },
-                "projects": {
-                    "type": "boolean",
-                    "title": "Projects",
-                    "format": "checkbox",
-                    "propertyOrder": 200
-                },
-                "user_defined_projects": {
-                    "type": "boolean",
-                    "title": "Projects - User Defined",
-                    "format": "checkbox",
-                    "propertyOrder": 210
-                },
-                "archived_projects": {
-                    "type": "boolean",
-                    "title": "Archived Projects",
-                    "format": "checkbox",
-                    "propertyOrder": 250
-                },
-                "projects_sections": {
-                    "type": "boolean",
-                    "title": "Project Sections",
-                    "format": "checkbox",
-                    "propertyOrder": 300
-                },
-                "projects_sections_tasks": {
-                    "type": "boolean",
-                    "title": "Project Sections Tasks",
-                    "format": "checkbox",
-                    "propertyOrder": 350
-                }, 
-                "projects_tasks": {
-                    "type": "boolean",
-                    "title": "Project Tasks",
-                    "format": "checkbox",
-                    "propertyOrder": 400
-                },
-                "projects_tasks_details": {
-                    "type": "boolean",
-                    "title": "Project Tasks Details",
-                    "format": "checkbox",
-                    "propertyOrder": 500
-                },
-                "projects_tasks_subtasks": {
-                    "type": "boolean",
-                    "title": "Project Tasks Subtasks",
-                    "format": "checkbox",
-                    "propertyOrder": 600
-                },
-                "projects_tasks_stories": {
-                    "type": "boolean",
-                    "title": "Project Tasks Stories",
-                    "format": "checkbox",
-                    "propertOrder": 700
-                }
-            }
+        "projects": {
+          "type": "boolean",
+          "title": "Projects",
+          "format": "checkbox",
+          "propertyOrder": 200
         },
-        "project_id": {
-            "type": "string",
-            "title": "Project IDs",
-            "propertyOrder": 300,
-            "description": "Required when endpoint [Projects - User Defined] is selected. Please enter your values with comma delimiter."
+        "user_defined_projects": {
+          "type": "boolean",
+          "title": "Projects - User Defined",
+          "format": "checkbox",
+          "propertyOrder": 210
+        },
+        "archived_projects": {
+          "type": "boolean",
+          "title": "Archived Projects",
+          "format": "checkbox",
+          "propertyOrder": 250
+        },
+        "projects_sections": {
+          "type": "boolean",
+          "title": "Project Sections",
+          "format": "checkbox",
+          "propertyOrder": 300
+        },
+        "projects_sections_tasks": {
+          "type": "boolean",
+          "title": "Project Sections Tasks",
+          "format": "checkbox",
+          "propertyOrder": 350
+        },
+        "projects_tasks": {
+          "type": "boolean",
+          "title": "Project Tasks",
+          "format": "checkbox",
+          "propertyOrder": 400
+        },
+        "projects_tasks_details": {
+          "type": "boolean",
+          "title": "Project Tasks Details",
+          "format": "checkbox",
+          "propertyOrder": 500
+        },
+        "projects_tasks_subtasks": {
+          "type": "boolean",
+          "title": "Project Tasks Subtasks",
+          "format": "checkbox",
+          "propertyOrder": 600
+        },
+        "projects_tasks_stories": {
+          "type": "boolean",
+          "title": "Project Tasks Stories",
+          "format": "checkbox",
+          "propertOrder": 700
         }
+      }
+    },
+    "project_id": {
+      "type": "string",
+      "title": "Project IDs",
+      "propertyOrder": 300,
+      "description": "Required when endpoint [Projects - User Defined] is selected. Please enter your values with comma delimiter."
+    },
+    "incremental_load": {
+      "type": "boolean",
+      "title": "Incremental Load",
+      "default": false,
+      "format": "checkbox",
+      "propertyOrder": 400
+    },
+    "load_options": {
+      "type": "object",
+      "title": "Load Options",
+      "propertyOrder": 500,
+      "properties": {
+        "date_from": {
+          "type": "string",
+          "title": "Date From",
+          "default": "last run",
+          "description": "Date from which data is downloaded. Either date in YYYY-MM-DD format or dateparser string i.e. 5 days ago, 1 month ago, yesterday, etc. You can also set this as last run, which will fetch data from the last run of the component.",
+          "propertyOrder": 20
+        }
+      },
+      "options": {
+        "dependencies": {
+          "incremental_load": true
+        }
+      }
     }
+  }
 }

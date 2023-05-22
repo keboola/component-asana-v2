@@ -1,17 +1,18 @@
 import logging
 import sys
-import os  # noqa
-import datetime  # noqa
+import os
+import datetime
+import pytz
 import requests
+import dateparser
 import pandas as pd
 import json
 
 from retry import retry
+from typing import Dict
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
-from kbc.result import KBCTableDef  # noqa
-from kbc.result import ResultWriter  # noqa
 from mapping_parser import MappingParser
 
 # configuration variables
@@ -20,6 +21,9 @@ KEY_TOKEN = '#token'
 KEY_INCREMENTAL_LOAD = 'incremental_load'
 KEY_ENDPOINTS = 'endpoints'
 KEY_PROJECT_ID = 'project_id'
+
+KEY_LOAD_OPTIONS = "load_options"
+KEY_DATE_FROM = "date_from"
 
 REQUIRED_PARAMETERS = [
     KEY_ENDPOINTS,
@@ -112,7 +116,6 @@ class Component(ComponentBase):
         params = self.configuration.parameters
         self.incremental = params.get(KEY_INCREMENTAL_LOAD)
         self.token = params.get(KEY_TOKEN)
-        self.last_run = None
         log_level = logging.DEBUG if debug_mode else logging.INFO
         self.set_gelf_logger(log_level)
 
@@ -120,25 +123,27 @@ class Component(ComponentBase):
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
         self.validate_image_parameters(REQUIRED_IMAGE_PARS)
 
+        logging.info = print
+
+        now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
         params = self.configuration.parameters
-        state = self.get_state_file()
-        if self.incremental and not state:
-            state = {}
-        # Last run date
-        self.last_run = state.get('last_run') if self.incremental else None
+
         # Validate user inputs
         # & prep parameters for user_defined_projects
         self.validate_user_inputs(params)
 
+        date_from = self.get_date_from()
+
         # User input parameters
         endpoints = params.get(KEY_ENDPOINTS)
-        now = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+
         if self.incremental:
-            logging.info(f"Timestamp used for incremental fetching: {now}")
+            logging.info(f"Timestamp used for incremental fetching: {date_from}")
 
         for r in REQUEST_ORDER:
             if r == 'workspaces' or endpoints[r]:
-                self.fetch(endpoint=r, incremental=self.incremental)
+                self.fetch(endpoint=r, incremental=self.incremental, modified_since=date_from)
 
         # Always storing the last extraction date
         # if self.incremental:
@@ -146,6 +151,14 @@ class Component(ComponentBase):
         self.write_state_file(state)
 
         logging.info("Extraction finished")
+
+    def get_date_from(self):
+        params = self.configuration.parameters
+        load_options = params.get(KEY_LOAD_OPTIONS, {})
+        state = self.get_state_file()
+        if date_from_raw := load_options.get(KEY_DATE_FROM):
+            return self.parse_date(state, date_from_raw)
+        return state.get('last_run')
 
     def validate_user_inputs(self, params):
         """
@@ -239,7 +252,7 @@ class Component(ComponentBase):
 
         return data_out
 
-    def fetch(self, endpoint, incremental):
+    def fetch(self, endpoint, incremental, modified_since=None):
         """
         Processing/Fetching data
         """
@@ -255,8 +268,8 @@ class Component(ComponentBase):
             request_params['archived'] = False
 
         # Incremental load
-        if self.incremental and self.last_run:
-            request_params['modified_since'] = self.last_run
+        if self.incremental and modified_since:
+            request_params['modified_since'] = modified_since
 
         # Inputs required for the parser and requests
         required_endpoint = REQUEST_MAP[endpoint].get('required')
@@ -336,6 +349,20 @@ class Component(ComponentBase):
                 data_output.to_csv(b, index=False, header=False)
 
         b.close()
+
+    @staticmethod
+    def parse_date(state: Dict, date_str: str) -> str:
+        if date_str.lower() in {"last", "lastrun", "last run"}:
+            return state.get('last_run')
+        try:
+            date_obj = dateparser.parse(date_str, settings={'TIMEZONE': 'UTC'})
+            if date_obj is None:
+                raise ValueError("Invalid date string")
+            date_obj = date_obj.replace(tzinfo=pytz.UTC)
+            date_str = date_obj.strftime('%Y-%m-%dT%H:%M:%SZ')
+            return date_str
+        except ValueError as e:
+            raise UserException(f"Parameters Error : Could not parse to date : {date_str}") from e
 
 
 if __name__ == "__main__":
