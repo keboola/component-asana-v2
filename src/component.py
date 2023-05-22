@@ -110,14 +110,11 @@ class RetryableError(Exception):
 
 
 class Component(ComponentBase):
-
-    def __init__(self, debug_mode=None):
+    def __init__(self):
         super().__init__()
         params = self.configuration.parameters
         self.incremental = params.get(KEY_INCREMENTAL_LOAD)
         self.token = params.get(KEY_TOKEN)
-        log_level = logging.DEBUG if debug_mode else logging.INFO
-        self.set_gelf_logger(log_level)
 
     def run(self):
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
@@ -365,8 +362,7 @@ class Component(ComponentBase):
 
 if __name__ == "__main__":
     try:
-        debug = sys.argv[1] if len(sys.argv) > 1 else True
-        comp = Component(debug_mode=debug)
+        comp = Component()
         comp.execute_action()
     except UserException as exc:
         logging.exception(exc)
