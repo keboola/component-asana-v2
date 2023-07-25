@@ -262,8 +262,14 @@ class Component(ComponentBase):
             request_params['archived'] = False
 
         # Incremental load
+        """
         if self.incremental and modified_since:
             request_params['modified_since'] = modified_since
+        """
+
+        if endpoint == "projects_tasks":
+            if self.incremental and modified_since:
+                request_params['completed_since'] = modified_since
 
         # Inputs required for the parser and requests
         required_endpoint = REQUEST_MAP[endpoint].get('required')
@@ -272,7 +278,8 @@ class Component(ComponentBase):
         # Checking if parent endpoint is required
         if required_endpoint:
             self.fetch(
-                required_endpoint, incremental=self.incremental) if required_endpoint not in REQUESTED_ENDPOINTS else ''
+                required_endpoint, incremental=self.incremental, modified_since=modified_since)\
+                if required_endpoint not in REQUESTED_ENDPOINTS else ''
 
         # For endpoints required data from parent endpoint
         if required_endpoint:
