@@ -283,6 +283,12 @@ class Component(ComponentBase):
 
         # For endpoints required data from parent endpoint
         if required_endpoint:
+
+            if endpoint == "projects_tasks_details":
+                temp_tasks = [item['gid'] for item in ROOT_ENDPOINTS.get('projects_tasks')]
+                logging.debug(f"Fetching {len(temp_tasks)} tasks: {temp_tasks}")
+                del temp_tasks
+
             for i in ROOT_ENDPOINTS[required_endpoint]:
                 i_id = i['gid']
                 endpoint_url = REQUEST_MAP[endpoint]['endpoint']
