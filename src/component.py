@@ -285,9 +285,20 @@ class Component(ComponentBase):
         if required_endpoint:
 
             if endpoint == "projects_tasks_details":
-                temp_tasks = [item['gid'] for item in ROOT_ENDPOINTS.get('projects_tasks')]
-                logging.debug(f"Fetching {len(temp_tasks)} tasks: {temp_tasks}")
-                del temp_tasks
+
+                deduplicated_task_gids = []
+                seen_gids = set()
+
+                logging.debug(f"Tasks before deduplication: {len(ROOT_ENDPOINTS['projects_tasks'])}.")
+
+                for item in ROOT_ENDPOINTS.get("projects_tasks"):
+                    if item['gid'] not in seen_gids:
+                        deduplicated_task_gids.append(item)
+                        seen_gids.add(item['gid'])
+
+                ROOT_ENDPOINTS["projects_tasks"] = deduplicated_task_gids
+
+                logging.debug(f"Fetching {len(ROOT_ENDPOINTS['projects_tasks'])} tasks.")
 
             for i in ROOT_ENDPOINTS[required_endpoint]:
                 i_id = i['gid']
