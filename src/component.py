@@ -203,11 +203,12 @@ class Component(ComponentBase):
         if not params:
             params = {}
         params['limit'] = 100
-        request_loop = True
-        pagination_offset = ''
+        pagination_offset = None
+
+        request_nr = 1
 
         data_out = []
-        while request_loop:
+        while True:
             # If pagination parameter exist
             if pagination_offset:
                 params['offset'] = pagination_offset
@@ -242,7 +243,11 @@ class Component(ComponentBase):
                 pagination_offset = r.json()['next_page']['offset']
 
             else:
-                request_loop = False
+                params.pop("offset", None)
+                break
+
+            print(f"Made request_nr {request_nr}.")
+            request_nr += 1
 
         return data_out
 
@@ -344,6 +349,8 @@ class Component(ComponentBase):
         for i in id_list:
             tmp = {'gid': i}
             ROOT_ENDPOINTS[endpoint].append(tmp)
+
+        print(f"Defined filter for endpoint {endpoint}: {ROOT_ENDPOINTS}")
 
     def _output(self, df_json, filename):
         output_filename = f'{self.tables_out_path}/{filename}.csv'
