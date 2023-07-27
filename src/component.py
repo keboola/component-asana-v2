@@ -250,7 +250,7 @@ class Component(ComponentBase):
             data_out = self._get_request(endpoint=endpoint, params=params)
             return data_out
         except RetryableError as e:
-            raise UserException(f"The component was unable for fetch data for endpoint {endpoint}, {e}") from e
+            raise UserException(f"The component was unable to fetch data for endpoint {endpoint}, {e}") from e
 
     def fetch(self, endpoint, incremental, completed_since=None):
         """
