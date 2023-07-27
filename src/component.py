@@ -188,7 +188,7 @@ class Component(ComponentBase):
             self._delimit_string(params[KEY_PROJECT_ID], 'projects')
 
     @retry(RetryableError, tries=5, delay=1, backoff=2)
-    def get_request(self, endpoint, params=None):
+    def _get_request(self, endpoint, params=None):
         """
         Generic Get request
         """
@@ -239,12 +239,18 @@ class Component(ComponentBase):
             # Loop
             if r.json().get('next_page'):
                 pagination_offset = r.json()['next_page']['offset']
-
             else:
                 params.pop("offset", None)
                 break
 
         return data_out
+
+    def get_request(self, endpoint, params=None):
+        try:
+            data_out = self._get_request(endpoint=endpoint, params=params)
+            return data_out
+        except RetryableError as e:
+            raise UserException(f"The component was unable for fetch data for endpoint {endpoint}, {e}") from e
 
     def fetch(self, endpoint, incremental, modified_since=None):
         """
@@ -285,18 +291,6 @@ class Component(ComponentBase):
         if required_endpoint:
 
             if endpoint == "projects_tasks_details":
-
-                deduplicated_task_gids = []
-                seen_gids = set()
-
-                logging.debug(f"Tasks before deduplication: {len(ROOT_ENDPOINTS['projects_tasks'])}.")
-
-                for item in ROOT_ENDPOINTS.get("projects_tasks"):
-                    if item['gid'] not in seen_gids:
-                        deduplicated_task_gids.append(item)
-                        seen_gids.add(item['gid'])
-
-                ROOT_ENDPOINTS["projects_tasks"] = deduplicated_task_gids
 
                 logging.debug(f"Fetching {len(ROOT_ENDPOINTS['projects_tasks'])} tasks.")
 
