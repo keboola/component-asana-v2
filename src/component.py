@@ -137,7 +137,7 @@ class Component(ComponentBase):
 
         for r in REQUEST_ORDER:
             if r == 'workspaces' or endpoints[r]:
-                self.fetch(endpoint=r, incremental=self.incremental, modified_since=date_from)
+                self.fetch(endpoint=r, incremental=self.incremental, completed_since=date_from)
 
         # Always storing the last extraction date
         # if self.incremental:
@@ -252,7 +252,7 @@ class Component(ComponentBase):
         except RetryableError as e:
             raise UserException(f"The component was unable for fetch data for endpoint {endpoint}, {e}") from e
 
-    def fetch(self, endpoint, incremental, modified_since=None):
+    def fetch(self, endpoint, incremental, completed_since=None):
         """
         Processing/Fetching data
         """
@@ -269,13 +269,11 @@ class Component(ComponentBase):
 
         # Incremental load
         """
-        if self.incremental and modified_since:
-            request_params['modified_since'] = modified_since
+        Used for endpoint https://developers.asana.com/reference/gettasksforproject 
         """
-
         if endpoint == "projects_tasks":
-            if self.incremental and modified_since:
-                request_params['completed_since'] = modified_since
+            if self.incremental and completed_since:
+                request_params['completed_since'] = completed_since
 
         # Inputs required for the parser and requests
         required_endpoint = REQUEST_MAP[endpoint].get('required')
@@ -284,7 +282,7 @@ class Component(ComponentBase):
         # Checking if parent endpoint is required
         if required_endpoint:
             self.fetch(
-                required_endpoint, incremental=self.incremental, modified_since=modified_since)\
+                required_endpoint, incremental=self.incremental, completed_since=completed_since)\
                 if required_endpoint not in REQUESTED_ENDPOINTS else ''
 
         # For endpoints required data from parent endpoint
