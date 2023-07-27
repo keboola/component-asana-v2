@@ -269,7 +269,7 @@ class Component(ComponentBase):
 
         # Incremental load
         """
-        Used for endpoint https://developers.asana.com/reference/gettasksforproject 
+        Used for endpoint https://developers.asana.com/reference/gettasksforproject
         """
         if endpoint == "projects_tasks":
             if self.incremental and completed_since:
