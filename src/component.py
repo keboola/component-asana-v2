@@ -23,6 +23,7 @@ KEY_PROJECT_ID = 'project_id'
 
 KEY_LOAD_OPTIONS = "load_options"
 KEY_DATE_FROM = "date_from"
+KEY_SKIP_UNAUTHORIZED = "skip_unauthorized"
 
 REQUIRED_PARAMETERS = [
     KEY_ENDPOINTS,
@@ -112,6 +113,7 @@ class Component(ComponentBase):
     def __init__(self):
         super().__init__()
         params = self.configuration.parameters
+        self.skip = params.get(KEY_SKIP_UNAUTHORIZED, False)
         self.incremental = params.get(KEY_INCREMENTAL_LOAD)
         self.token = params.get(KEY_TOKEN)
 
@@ -220,9 +222,15 @@ class Component(ComponentBase):
                 raise RetryableError(f"Retrying on exception with code {r.status_code}")
             elif r.status_code in [400, 402, 451]:
                 raise UserException(f"Failed request on exception with code {r.status_code} : {r.json()}")
-            elif r.status_code in [403, 404, 429, 500, 503]:
+            elif r.status_code in [404, 429, 500, 503]:
                 logging.error(f'Request issue:{r.status_code} {r.json()}')
                 raise RetryableError(f"Retrying on exception with code {r.status_code}")
+            elif r.status_code == 403:
+                if self.skip:
+                    logging.warning(f"Skipping resource {request_url}, reason: unauthorized.")
+                    break
+                else:
+                    raise UserException(f"Cannot access resource {request_url}, reason: {r.json()}")
 
             elif r.status_code not in [200, 201]:
                 logging.error(f'Request Failed: code - {r.status_code} :{r.json()}')
