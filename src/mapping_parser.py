@@ -18,7 +18,7 @@ class MappingParser():
         self.incremental = incremental
 
         # Countermeasures for response coming in as DICT
-        if type(self.endpoint_data) == dict: # noqa
+        if isinstance(self.endpoint_data, dict):
             self.endpoint_data = []
             self.endpoint_data.append(endpoint_data)
 
