@@ -23,6 +23,7 @@ KEY_PROJECT_ID = 'project_id'
 
 KEY_LOAD_OPTIONS = "load_options"
 KEY_DATE_FROM = "date_from"
+KEY_SKIP_UNAUTHORIZED = "skip_unauthorized"
 
 REQUIRED_PARAMETERS = [
     KEY_ENDPOINTS,
@@ -112,6 +113,7 @@ class Component(ComponentBase):
     def __init__(self):
         super().__init__()
         params = self.configuration.parameters
+        self.skip = params.get(KEY_SKIP_UNAUTHORIZED, False)
         self.incremental = params.get(KEY_INCREMENTAL_LOAD)
         self.token = params.get(KEY_TOKEN)
 
@@ -137,7 +139,7 @@ class Component(ComponentBase):
 
         for r in REQUEST_ORDER:
             if r == 'workspaces' or endpoints[r]:
-                self.fetch(endpoint=r, incremental=self.incremental, modified_since=date_from)
+                self.fetch(endpoint=r, incremental=self.incremental, completed_since=date_from)
 
         # Always storing the last extraction date
         # if self.incremental:
@@ -188,7 +190,7 @@ class Component(ComponentBase):
             self._delimit_string(params[KEY_PROJECT_ID], 'projects')
 
     @retry(RetryableError, tries=5, delay=1, backoff=2)
-    def get_request(self, endpoint, params=None):
+    def _get_request(self, endpoint, params=None):
         """
         Generic Get request
         """
@@ -203,11 +205,10 @@ class Component(ComponentBase):
         if not params:
             params = {}
         params['limit'] = 100
-        request_loop = True
-        pagination_offset = ''
+        pagination_offset = None
 
         data_out = []
-        while request_loop:
+        while True:
             # If pagination parameter exist
             if pagination_offset:
                 params['offset'] = pagination_offset
@@ -221,9 +222,15 @@ class Component(ComponentBase):
                 raise RetryableError(f"Retrying on exception with code {r.status_code}")
             elif r.status_code in [400, 402, 451]:
                 raise UserException(f"Failed request on exception with code {r.status_code} : {r.json()}")
-            elif r.status_code in [403, 404, 429, 500, 503]:
+            elif r.status_code in [404, 429, 500, 503]:
                 logging.error(f'Request issue:{r.status_code} {r.json()}')
                 raise RetryableError(f"Retrying on exception with code {r.status_code}")
+            elif r.status_code == 403:
+                if self.skip:
+                    logging.warning(f"Skipping resource {request_url}, reason: unauthorized.")
+                    break
+                else:
+                    raise UserException(f"Cannot access resource {request_url}, reason: {r.json()}")
 
             elif r.status_code not in [200, 201]:
                 logging.error(f'Request Failed: code - {r.status_code} :{r.json()}')
@@ -240,13 +247,20 @@ class Component(ComponentBase):
             # Loop
             if r.json().get('next_page'):
                 pagination_offset = r.json()['next_page']['offset']
-
             else:
-                request_loop = False
+                params.pop("offset", None)
+                break
 
         return data_out
 
-    def fetch(self, endpoint, incremental, modified_since=None):
+    def get_request(self, endpoint, params=None):
+        try:
+            data_out = self._get_request(endpoint=endpoint, params=params)
+            return data_out
+        except RetryableError as e:
+            raise UserException(f"The component was unable to fetch data for endpoint {endpoint}, {e}") from e
+
+    def fetch(self, endpoint, incremental, completed_since=None):
         """
         Processing/Fetching data
         """
@@ -262,8 +276,12 @@ class Component(ComponentBase):
             request_params['archived'] = False
 
         # Incremental load
-        if self.incremental and modified_since:
-            request_params['modified_since'] = modified_since
+        """
+        Used for endpoint https://developers.asana.com/reference/gettasksforproject
+        """
+        if endpoint == "projects_tasks":
+            if self.incremental and completed_since:
+                request_params['completed_since'] = completed_since
 
         # Inputs required for the parser and requests
         required_endpoint = REQUEST_MAP[endpoint].get('required')
@@ -272,10 +290,16 @@ class Component(ComponentBase):
         # Checking if parent endpoint is required
         if required_endpoint:
             self.fetch(
-                required_endpoint, incremental=self.incremental) if required_endpoint not in REQUESTED_ENDPOINTS else ''
+                required_endpoint, incremental=self.incremental, completed_since=completed_since)\
+                if required_endpoint not in REQUESTED_ENDPOINTS else ''
 
         # For endpoints required data from parent endpoint
         if required_endpoint:
+
+            if endpoint == "projects_tasks_details":
+
+                logging.debug(f"Fetching {len(ROOT_ENDPOINTS['projects_tasks'])} tasks.")
+
             for i in ROOT_ENDPOINTS[required_endpoint]:
                 i_id = i['gid']
                 endpoint_url = REQUEST_MAP[endpoint]['endpoint']

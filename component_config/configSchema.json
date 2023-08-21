@@ -136,6 +136,14 @@
           "incremental_load": true
         }
       }
+    },
+    "skip_unauthorized": {
+      "type": "boolean",
+      "title": "Skip unauthorized",
+      "default": false,
+      "format": "checkbox",
+      "description": "If set to true, the component will skip objects that the authenticated user is not authorized to access.",
+      "propertyOrder": 600
     }
   }
 }
