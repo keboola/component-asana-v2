@@ -38,7 +38,7 @@ REQUEST_MAP = {
         'endpoint': 'workspaces',
         'mapping': 'workspaces'},
     'users': {
-        'endpoint': 'workspaces/{workspaces_id}/users',
+        'endpoint': 'users?workspace={workspaces_id}',
         'required': 'workspaces', 'mapping': 'users'},
     'users_details': {
         'endpoint': 'users/{users_id}',
