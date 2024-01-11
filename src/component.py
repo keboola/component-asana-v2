@@ -220,14 +220,15 @@ class Component(ComponentBase):
                 logging.error(
                     'Authorization failed. Please validate your credentials.')
                 raise RetryableError(f"Retrying on exception with code {r.status_code}")
-            elif r.status_code in [400, 402, 451]:
+            elif r.status_code in [402, 451]:
                 raise UserException(f"Failed request on exception with code {r.status_code} : {r.json()}")
-            elif r.status_code in [404, 429, 500, 503]:
+
+            elif r.status_code in [429, 500, 503]:
                 logging.error(f'Request issue:{r.status_code} {r.json()}')
                 raise RetryableError(f"Retrying on exception with code {r.status_code}")
-            elif r.status_code == 403:
+            elif r.status_code in [400, 403, 404]:
                 if self.skip:
-                    logging.warning(f"Skipping resource {request_url}, reason: unauthorized.")
+                    logging.warning(f"Skipping resource {request_url}, reason: {r.json()}")
                     break
                 else:
                     raise UserException(f"Cannot access resource {request_url}, reason: {r.json()}")
@@ -240,9 +241,12 @@ class Component(ComponentBase):
                         logging.error(err['message']) if 'message' in err else ''
                 raise RetryableError(f"Retrying on exception with code {r.status_code}")
 
-            requested_data = [r.json()['data']] if type(
-                r.json()['data']) == dict else r.json()['data']
-            data_out = data_out + requested_data
+            try:
+                requested_data = [r.json()['data']] if type(
+                    r.json()['data']) == dict else r.json()['data']
+                data_out = data_out + requested_data
+            except KeyError:
+                logging.warning(f"Failed to parse data from response: {r.json()}")
 
             # Loop
             if r.json().get('next_page'):
@@ -309,19 +313,20 @@ class Component(ComponentBase):
                 data = self.get_request(
                     endpoint=endpoint_url, params=request_params)
                 # self._output(df_json=data, filename=endpoint)
-                MappingParser(
-                    destination=f'{self.tables_out_path}/',
-                    # endpoint=endpoint,
-                    endpoint=REQUEST_MAP[endpoint]['mapping'],
-                    endpoint_data=data,
-                    mapping=endpoint_mapping,
-                    parent_key=i_id,
-                    incremental=incremental
-                )
+                if data:
+                    MappingParser(
+                        destination=f'{self.tables_out_path}/',
+                        # endpoint=endpoint,
+                        endpoint=REQUEST_MAP[endpoint]['mapping'],
+                        endpoint_data=data,
+                        mapping=endpoint_mapping,
+                        parent_key=i_id,
+                        incremental=incremental
+                    )
 
-                # Saving endpoints that are parent
-                if endpoint in ROOT_ENDPOINTS:
-                    ROOT_ENDPOINTS[endpoint] = ROOT_ENDPOINTS[endpoint] + data
+                    # Saving endpoints that are parent
+                    if endpoint in ROOT_ENDPOINTS:
+                        ROOT_ENDPOINTS[endpoint] = ROOT_ENDPOINTS[endpoint] + data
 
         else:
             endpoint_url = REQUEST_MAP[endpoint]['endpoint']
