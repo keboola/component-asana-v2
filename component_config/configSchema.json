@@ -4,8 +4,7 @@
   "required": [
     "#token",
     "incremental_load",
-    "endpoints",
-    "project_id"
+    "endpoints"
   ],
   "properties": {
     "#token": {
