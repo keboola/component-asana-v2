@@ -65,7 +65,7 @@ class MappingParser():
                     mapping = self.mapping[m]['tableMapping']
                     parent_key = row['gid']
                     data = self._fetch_value(row=row, key=m)
-                    
+
                     if endpoint == 'task_details-memberships':
                         add_timestamp = True
                     else:
