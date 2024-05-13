@@ -28,11 +28,13 @@ class MappingParser():
         # Parsing
         self.parse()
         if self.output:
+            pk = self.primary_key
             if self.add_timestamp:
                 self.output = self._add_timestamp(df_json=self.output)
+                pk.append("timestamp")
+
             self._output(df_json=self.output, filename=self.endpoint)
-            self._produce_manifest(
-                filename=self.endpoint, incremental=self.incremental, primary_key=self.primary_key)
+            self._produce_manifest(filename=self.endpoint, incremental=self.incremental, primary_key=pk)
 
     def parse(self):
         for row in self.endpoint_data:
