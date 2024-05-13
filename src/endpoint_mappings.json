@@ -606,8 +606,7 @@
                 "section.gid": {
                     "type": "column",
                     "mapping": {
-                        "destination": "section_id",
-                        "primaryKey": true
+                        "destination": "section_id"
                     }
                 },
                 "section.name": {
