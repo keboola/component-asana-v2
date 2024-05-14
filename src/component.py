@@ -24,6 +24,7 @@ KEY_PROJECT_ID = 'project_id'
 KEY_LOAD_OPTIONS = "load_options"
 KEY_DATE_FROM = "date_from"
 KEY_SKIP_UNAUTHORIZED = "skip_unauthorized"
+KEY_TASK_MEMBERSHIP_TIMESTAMP = "task_membership_timestamp"
 
 REQUIRED_PARAMETERS = [
     KEY_ENDPOINTS,
@@ -321,7 +322,8 @@ class Component(ComponentBase):
                         endpoint_data=data,
                         mapping=endpoint_mapping,
                         parent_key=i_id,
-                        incremental=incremental
+                        incremental=incremental,
+                        add_timestamp=self.configuration.parameters.get(KEY_TASK_MEMBERSHIP_TIMESTAMP, False)
                     )
 
                     # Saving endpoints that are parent

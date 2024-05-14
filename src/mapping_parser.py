@@ -8,7 +8,7 @@ import time
 
 class MappingParser():
     def __init__(self, destination, endpoint, endpoint_data, mapping, parent_key=None, incremental=False,
-                 add_timestamp=False):
+                 add_timestamp=False, generate_timestamp=False):
 
         self.destination = destination
         self.endpoint = endpoint
@@ -29,7 +29,7 @@ class MappingParser():
         self.parse()
         if self.output:
             pk = self.primary_key
-            if self.add_timestamp:
+            if generate_timestamp:
                 self.output = self._add_timestamp(df_json=self.output)
                 pk.append("timestamp")
 
@@ -68,10 +68,10 @@ class MappingParser():
                     parent_key = row['gid']
                     data = self._fetch_value(row=row, key=m)
 
-                    if endpoint == 'task_details-memberships':
-                        add_timestamp = True
+                    if endpoint == 'task_details-memberships' and self.add_timestamp:
+                        generate_timestamp = True
                     else:
-                        add_timestamp = False
+                        generate_timestamp = False
 
                     MappingParser(
                         destination=self.destination,
@@ -80,7 +80,7 @@ class MappingParser():
                         mapping=mapping,
                         parent_key=parent_key,
                         incremental=self.incremental,
-                        add_timestamp=add_timestamp
+                        generate_timestamp=generate_timestamp
                     )
 
             self.output.append(row_json)

@@ -110,6 +110,17 @@
       },
       "description": "Required when endpoint [Projects - User Defined] is selected. Please enter your values with comma delimiter."
     },
+    "task_membership_timestamp": {
+      "type": "boolean",
+      "title": "Add timestamp column to task membership table",
+      "propertyOrder": 310,
+      "options": {
+        "dependencies": {
+          "endpoints.projects_tasks_details" : true
+        }
+      },
+      "description": "Allows you to track changes in task membership over time."
+    },
     "incremental_load": {
       "type": "boolean",
       "title": "Incremental Load",
