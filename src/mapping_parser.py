@@ -32,6 +32,7 @@ class MappingParser():
             if generate_timestamp:
                 self.output = self._add_timestamp(df_json=self.output)
                 pk.append("timestamp")
+                pk.remove("section_id")
 
             self._output(df_json=self.output, filename=self.endpoint)
             self._produce_manifest(filename=self.endpoint, incremental=self.incremental, primary_key=pk)
