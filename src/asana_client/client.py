@@ -126,7 +126,6 @@ class AsanaClient(AsyncHttpClient):
                 tasks.append(self._fetch(r, completed_since=completed_since, requested_endpoints=endpoints))
         await asyncio.gather(*tasks)
 
-
     async def _fetch(self, endpoint, completed_since=None, requested_endpoints: list = None):
         """
         Processing/Fetching data
@@ -225,7 +224,6 @@ class AsanaClient(AsyncHttpClient):
             self.find_dependencies(endpoint, endpoints_needed)
         return endpoints_needed
 
-
     def find_dependencies(self, endpoint, endpoints_needed):
         if endpoint not in endpoints_needed:
             endpoints_needed.add(endpoint)
@@ -262,8 +260,7 @@ class AsanaClient(AsyncHttpClient):
                     raise AsanaClientException(e)
 
             try:
-                requested_data = [r['data']] if type(
-                    r['data']) == dict else r['data']
+                requested_data = [r['data']] if isinstance(r['data'], dict) else r['data']
                 data_out = data_out + requested_data
             except KeyError:
                 logging.warning(f"Failed to parse data from response: {r.json()}")
