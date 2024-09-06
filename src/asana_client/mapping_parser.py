@@ -3,10 +3,12 @@ import json
 import logging  # noqa
 import sys  # noqa
 import pandas as pd
+import time
 
 
 class MappingParser():
-    def __init__(self, destination, endpoint, endpoint_data, mapping, parent_key=None, incremental=False):
+    def __init__(self, destination, endpoint, endpoint_data, mapping, parent_key=None, incremental=False,
+                 add_timestamp=False, generate_timestamp=False):
 
         self.destination = destination
         self.endpoint = endpoint
@@ -16,6 +18,7 @@ class MappingParser():
         self.output = []
         self.primary_key = []
         self.incremental = incremental
+        self.add_timestamp = add_timestamp
 
         # Countermeasures for response coming in as DICT
         if isinstance(self.endpoint_data, dict):
@@ -25,9 +28,14 @@ class MappingParser():
         # Parsing
         self.parse()
         if self.output:
+            pk = self.primary_key
+            if generate_timestamp:
+                self.output = self._add_timestamp(df_json=self.output)
+                pk.append("timestamp")
+                pk.remove("section_id")
+
             self._output(df_json=self.output, filename=self.endpoint)
-            self._produce_manifest(
-                filename=self.endpoint, incremental=self.incremental, primary_key=self.primary_key)
+            self._produce_manifest(filename=self.endpoint, incremental=self.incremental, primary_key=pk)
 
     def parse(self):
         for row in self.endpoint_data:
@@ -61,13 +69,19 @@ class MappingParser():
                     parent_key = row['gid']
                     data = self._fetch_value(row=row, key=m)
 
+                    if endpoint == 'task_details-memberships' and self.add_timestamp:
+                        generate_timestamp = True
+                    else:
+                        generate_timestamp = False
+
                     MappingParser(
                         destination=self.destination,
                         endpoint=endpoint,
                         endpoint_data=data,
                         mapping=mapping,
                         parent_key=parent_key,
-                        incremental=self.incremental
+                        incremental=self.incremental,
+                        generate_timestamp=generate_timestamp
                     )
 
             self.output.append(row_json)
@@ -110,3 +124,10 @@ class MappingParser():
 
         with open(manifest_filename, 'w') as file_out:
             json.dump(manifest, file_out)
+
+    def _add_timestamp(self, df_json):
+        current_timestamp = time.time()
+        for item in df_json:
+            item['timestamp'] = current_timestamp
+
+        return df_json
