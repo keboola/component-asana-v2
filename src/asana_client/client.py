@@ -83,7 +83,7 @@ class AsanaClientException(Exception):
 
 class AsanaClient(AsyncHttpClient):
     def __init__(self, destination, api_token, incremental=False, debug: bool = False, skip_unauthorized: bool = False,
-                 max_requests_per_second: int = DEFAULT_MAX_REQUESTS_PER_SECOND):
+                 max_requests_per_second: int = DEFAULT_MAX_REQUESTS_PER_SECOND, membership_timestamp: bool = False):
         self.tables_out_path = destination
         self.incremental = incremental
         self.requested_endpoints = REQUESTED_ENDPOINTS
@@ -91,6 +91,7 @@ class AsanaClient(AsyncHttpClient):
         self.request_map = REQUEST_MAP
         self.counter = 0
         self.skip_unauthorized = skip_unauthorized
+        self.membership_timestamp = membership_timestamp
         super().__init__(base_url=BASE_URL,
                          auth=(api_token, ''),
                          retries=5,
@@ -179,7 +180,8 @@ class AsanaClient(AsyncHttpClient):
                         endpoint_data=data,
                         mapping=endpoint_mapping,
                         parent_key=i_id,
-                        incremental=self.incremental
+                        incremental=self.incremental,
+                        add_timestamp=self.membership_timestamp
                     )
 
                 # Saving endpoints that are parent

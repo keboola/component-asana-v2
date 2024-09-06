@@ -22,6 +22,7 @@ KEY_LOAD_OPTIONS = "load_options"
 KEY_DATE_FROM = "date_from"
 KEY_SKIP_UNAUTHORIZED = "skip_unauthorized"
 KEY_MAX_REQUESTS_PER_SECOND = "max_requests_per_second"
+KEY_TASK_MEMBERSHIP_TIMESTAMP = "task_membership_timestamp"
 
 REQUIRED_PARAMETERS = [
     KEY_ENDPOINTS,
@@ -50,7 +51,9 @@ class Component(ComponentBase):
         # Initialize the client
         self.client = AsanaClient(destination=self.tables_out_path, api_token=self.token, incremental=self.incremental,
                                   debug=self.params.get(KEY_DEBUG), skip_unauthorized=self.skip,
-                                  max_requests_per_second=self.params.get('max_requests_per_second'))
+                                  max_requests_per_second=self.params.get('max_requests_per_second'),
+                                  membership_timestamp=self.params.get(KEY_TASK_MEMBERSHIP_TIMESTAMP, False)
+                                  )
 
         # Validate user inputs
         self.validate_user_inputs(self.params)
