@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 
@@ -113,9 +114,22 @@ class AsanaClient(AsyncHttpClient):
             self.mappings = json.load(m)
 
     async def fetch(self, endpoints, completed_since=None):
+
         for r in self.request_order:
             if r == 'workspaces' or endpoints[r]:
                 await self._fetch(endpoint=r, completed_since=completed_since)
+        #
+        # 38s
+
+
+        # tasks = []
+
+        # for r in self.request_order:
+        #     if r == 'workspaces' or endpoints[r]:
+        #         tasks.append(self._fetch(r, completed_since=completed_since))
+        #
+        # await asyncio.gather(*tasks)
+        #     zacyklené
 
     async def _fetch(self, endpoint, completed_since=None):
         """
@@ -145,10 +159,9 @@ class AsanaClient(AsyncHttpClient):
         endpoint_mapping = self.mappings[self.request_map[endpoint]['mapping']]
 
         # Checking if parent endpoint is required
-        if required_endpoint:
-            await self._fetch(
-                required_endpoint, completed_since=completed_since) \
-                if required_endpoint not in self.requested_endpoints else ''
+        if required_endpoint and required_endpoint not in self.requested_endpoints:
+            await self._fetch(required_endpoint, completed_since=completed_since)
+
 
         # For endpoints required data from parent endpoint
         if required_endpoint:
@@ -167,7 +180,6 @@ class AsanaClient(AsyncHttpClient):
                 if data:
                     MappingParser(
                         destination=f'{self.tables_out_path}/',
-                        # endpoint=endpoint,
                         endpoint=self.request_map[endpoint]['mapping'],
                         endpoint_data=data,
                         mapping=endpoint_mapping,
@@ -185,7 +197,6 @@ class AsanaClient(AsyncHttpClient):
 
             MappingParser(
                 destination=f'{self.tables_out_path}/',
-                # endpoint=endpoint,
                 endpoint=self.request_map[endpoint]['mapping'],
                 endpoint_data=data,
                 mapping=endpoint_mapping,
@@ -230,8 +241,13 @@ class AsanaClient(AsyncHttpClient):
 
             logging.debug(f'{endpoint} Parameters: {params}')
             r = await self._get(endpoint=endpoint, params=params)
-            data = r.get('data', {})
-            data_out.extend(data)
+
+            try:
+                requested_data = [r['data']] if type(
+                    r['data']) == dict else r['data']
+                data_out = data_out + requested_data
+            except KeyError:
+                logging.warning(f"Failed to parse data from response: {r.json()}")
 
             # Loop
             if r.get('next_page'):
