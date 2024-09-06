@@ -142,19 +142,12 @@ class Component(ComponentBase):
 
 
 if __name__ == "__main__":
-    import time
-    start = time.time()
     try:
         comp = Component()
         comp.execute_action()
-        logging.info(f"Execution time: {time.time() - start}")
     except UserException as exc:
         logging.exception(exc)
-        logging.info(f"Execution time: {time.time() - start}")
-
         exit(1)
     except Exception as exc:
         logging.exception(exc)
-        logging.info(f"Execution time: {time.time() - start}")
-
         exit(2)
