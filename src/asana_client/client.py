@@ -1,4 +1,5 @@
 import asyncio
+import itertools
 import json
 import logging
 
@@ -169,27 +170,31 @@ class AsanaClient(AsyncHttpClient):
             if endpoint == "projects_tasks_details":
                 logging.debug(f"Fetching {len(self.root_endpoints['projects_tasks'])} tasks.")
 
+            tasks = []
             for i in self.root_endpoints[required_endpoint]:
                 i_id = i['gid']
                 endpoint_url = self.request_map[endpoint]['endpoint']
                 endpoint_url = endpoint_url.replace(
                     '{' + f'{required_endpoint}' + '_id}', i_id)
 
-                data = await self._get_request(endpoint=endpoint_url, params=request_params)
+                tasks.append(self._get_request(endpoint=endpoint_url, params=request_params))
 
-                if data:
-                    MappingParser(
-                        destination=f'{self.tables_out_path}/',
-                        endpoint=self.request_map[endpoint]['mapping'],
-                        endpoint_data=data,
-                        mapping=endpoint_mapping,
-                        parent_key=i_id,
-                        incremental=self.incremental
-                    )
+            data_r = await asyncio.gather(*tasks)
+            data = list(itertools.chain.from_iterable(data_r))
 
-                    # Saving endpoints that are parent
-                    if endpoint in self.root_endpoints:
-                        self.root_endpoints[endpoint] = self.root_endpoints[endpoint] + data
+            if data:
+                MappingParser(
+                    destination=f'{self.tables_out_path}/',
+                    endpoint=self.request_map[endpoint]['mapping'],
+                    endpoint_data=data,
+                    mapping=endpoint_mapping,
+                    parent_key=i_id,
+                    incremental=self.incremental
+                )
+
+                # Saving endpoints that are parent
+                if endpoint in self.root_endpoints:
+                    self.root_endpoints[endpoint] = self.root_endpoints[endpoint] + data
 
         else:
             endpoint_url = self.request_map[endpoint]['endpoint']
