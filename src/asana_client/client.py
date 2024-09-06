@@ -6,7 +6,7 @@ import logging
 from httpx import HTTPStatusError
 from keboola.http_client.async_client import AsyncHttpClient
 
-from src.asana_client.mapping_parser import MappingParser
+from asana_client.mapping_parser import MappingParser
 
 BASE_URL = 'https://app.asana.com/api/1.0/'
 
@@ -99,7 +99,7 @@ class AsanaClient(AsyncHttpClient):
                          max_requests_per_second=max_requests_per_second,
                          timeout=10,
                          debug=debug)
-        with open('./asana_client/endpoint_mappings.json', 'r') as m:
+        with open('./src/asana_client/endpoint_mappings.json', 'r') as m:
             self.mappings = json.load(m)
 
     async def fetch(self, endpoints, completed_since=None):

@@ -9,7 +9,7 @@ from typing import Dict
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
-from src.asana_client.client import AsanaClient, AsanaClientException
+from asana_client.client import AsanaClient, AsanaClientException
 
 # configuration variables
 KEY_DEBUG = 'debug'
