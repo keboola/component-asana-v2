@@ -70,23 +70,8 @@ ROOT_ENDPOINTS = {
 }
 
 REQUESTED_ENDPOINTS = []
-REQUEST_ORDER = [
-    'workspaces',
-    'users',
-    'users_details',
-    'user_defined_projects',
-    'projects',
-    'archived_projects',
-    'projects_sections',
-    'projects_sections_tasks',
-    'projects_tasks',
-    'projects_tasks_details',
-    'projects_tasks_subtasks',
-    'projects_tasks_stories'
-]
 
-# TODO add option to change it by user licence
-MAX_REQUESTS_PER_SECOND = 4
+DEFAULT_MAX_REQUESTS_PER_SECOND = 4
 
 # The number of objects to return per page. The value must be between 1 and 100.
 API_PAGE_LIMIT = 100
@@ -97,18 +82,20 @@ class AsanaClientException(Exception):
 
 
 class AsanaClient(AsyncHttpClient):
-    def __init__(self, destination, api_token, incremental=False, debug: bool = False):
+    def __init__(self, destination, api_token, incremental=False, debug: bool = False, skip_unauthorized: bool = False,
+                 max_requests_per_second: int = DEFAULT_MAX_REQUESTS_PER_SECOND):
         self.tables_out_path = destination
         self.incremental = incremental
-        self.request_order = REQUEST_ORDER
         self.requested_endpoints = REQUESTED_ENDPOINTS
         self.root_endpoints = ROOT_ENDPOINTS
         self.request_map = REQUEST_MAP
+        self.counter = 0
+        self.skip_unauthorized = skip_unauthorized
         super().__init__(base_url=BASE_URL,
                          auth=(api_token, ''),
                          retries=5,
                          retry_status_codes=[402, 429, 500, 502, 503, 504],
-                         max_requests_per_second=MAX_REQUESTS_PER_SECOND,
+                         max_requests_per_second=max_requests_per_second,
                          timeout=10,
                          debug=debug)
         with open('./asana_client/endpoint_mappings.json', 'r') as m:
@@ -116,23 +103,31 @@ class AsanaClient(AsyncHttpClient):
 
     async def fetch(self, endpoints, completed_since=None):
 
-        for r in self.request_order:
-            if r == 'workspaces' or endpoints[r]:
-                await self._fetch(endpoint=r, completed_since=completed_since)
-        #
-        # 38s
+        endpoints_needed = self.get_endpoints_needed(endpoints)
+
+        await self._fetch(endpoint="workspaces", completed_since=completed_since, requested_endpoints=endpoints)
+
+        tasks = []
+        for r in ['users', 'projects']:
+            if r in endpoints_needed:
+                tasks.append(self._fetch(r, completed_since=completed_since, requested_endpoints=endpoints))
+        await asyncio.gather(*tasks)
+
+        tasks = []
+        for r in ['users_details', 'user_defined_projects', 'archived_projects', 'projects_sections', 'projects_tasks']:
+            if r in endpoints_needed:
+                tasks.append(self._fetch(r, completed_since=completed_since, requested_endpoints=endpoints))
+        await asyncio.gather(*tasks)
+
+        tasks = []
+        for r in ['projects_sections_tasks', 'projects_tasks_details',
+                  'projects_tasks_subtasks', 'projects_tasks_stories']:
+            if r in endpoints_needed:
+                tasks.append(self._fetch(r, completed_since=completed_since, requested_endpoints=endpoints))
+        await asyncio.gather(*tasks)
 
 
-        # tasks = []
-
-        # for r in self.request_order:
-        #     if r == 'workspaces' or endpoints[r]:
-        #         tasks.append(self._fetch(r, completed_since=completed_since))
-        #
-        # await asyncio.gather(*tasks)
-        #     zacyklené
-
-    async def _fetch(self, endpoint, completed_since=None):
+    async def _fetch(self, endpoint, completed_since=None, requested_endpoints: list = None):
         """
         Processing/Fetching data
         """
@@ -159,11 +154,6 @@ class AsanaClient(AsyncHttpClient):
         required_endpoint = self.request_map[endpoint].get('required')
         endpoint_mapping = self.mappings[self.request_map[endpoint]['mapping']]
 
-        # Checking if parent endpoint is required
-        if required_endpoint and required_endpoint not in self.requested_endpoints:
-            await self._fetch(required_endpoint, completed_since=completed_since)
-
-
         # For endpoints required data from parent endpoint
         if required_endpoint:
 
@@ -183,14 +173,15 @@ class AsanaClient(AsyncHttpClient):
             data = list(itertools.chain.from_iterable(data_r))
 
             if data:
-                MappingParser(
-                    destination=f'{self.tables_out_path}/',
-                    endpoint=self.request_map[endpoint]['mapping'],
-                    endpoint_data=data,
-                    mapping=endpoint_mapping,
-                    parent_key=i_id,
-                    incremental=self.incremental
-                )
+                if endpoint in requested_endpoints:
+                    MappingParser(
+                        destination=f'{self.tables_out_path}/',
+                        endpoint=self.request_map[endpoint]['mapping'],
+                        endpoint_data=data,
+                        mapping=endpoint_mapping,
+                        parent_key=i_id,
+                        incremental=self.incremental
+                    )
 
                 # Saving endpoints that are parent
                 if endpoint in self.root_endpoints:
@@ -200,13 +191,14 @@ class AsanaClient(AsyncHttpClient):
             endpoint_url = self.request_map[endpoint]['endpoint']
             data = await self._get_request(endpoint=endpoint_url)
 
-            MappingParser(
-                destination=f'{self.tables_out_path}/',
-                endpoint=self.request_map[endpoint]['mapping'],
-                endpoint_data=data,
-                mapping=endpoint_mapping,
-                incremental=self.incremental
-            )
+            if endpoint in requested_endpoints:
+                MappingParser(
+                    destination=f'{self.tables_out_path}/',
+                    endpoint=self.request_map[endpoint]['mapping'],
+                    endpoint_data=data,
+                    mapping=endpoint_mapping,
+                    incremental=self.incremental
+                )
 
             # Saving endpoints that are parent
             if endpoint in self.root_endpoints:
@@ -227,6 +219,20 @@ class AsanaClient(AsyncHttpClient):
             tmp = {'gid': i}
             self.root_endpoints[endpoint].append(tmp)
 
+    def get_endpoints_needed(self, endpoints):
+        endpoints_needed = set()
+        for endpoint in endpoints:
+            self.find_dependencies(endpoint, endpoints_needed)
+        return endpoints_needed
+
+
+    def find_dependencies(self, endpoint, endpoints_needed):
+        if endpoint not in endpoints_needed:
+            endpoints_needed.add(endpoint)
+            required = self.request_map.get(endpoint, {}).get('required')
+            if required:
+                self.find_dependencies(required, endpoints_needed)
+
     async def _get_request(self, endpoint, params=None):
         """
         Generic Get request
@@ -245,7 +251,15 @@ class AsanaClient(AsyncHttpClient):
                 params['offset'] = pagination_offset
 
             logging.debug(f'{endpoint} Parameters: {params}')
-            r = await self._get(endpoint=endpoint, params=params)
+
+            try:
+                r = await self._get(endpoint=endpoint, params=params)
+            except AsanaClientException as e:
+                if self.skip_unauthorized:
+                    logging.warning(f"Skipping unauthorized request: {e}")
+                    break
+                else:
+                    raise AsanaClientException(e)
 
             try:
                 requested_data = [r['data']] if type(
@@ -264,15 +278,16 @@ class AsanaClient(AsyncHttpClient):
         return data_out
 
     async def _get(self, endpoint: str, params=None) -> dict:
+        self.counter += 1
+
         if params is None:
             params = {}
 
-        r = await self.get_raw(endpoint, params=params)
-
         try:
+            r = await self.get_raw(endpoint, params=params)
             r.raise_for_status()
-        except HTTPStatusError:
-            raise AsanaClientException(f"Cannot fetch resource: {endpoint}")
+        except HTTPStatusError as e:
+            raise AsanaClientException(f"Cannot fetch resource: {endpoint}, exception: {e}")
 
         try:
             return r.json()

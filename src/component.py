@@ -21,6 +21,7 @@ KEY_PROJECT_ID = 'project_id'
 KEY_LOAD_OPTIONS = "load_options"
 KEY_DATE_FROM = "date_from"
 KEY_SKIP_UNAUTHORIZED = "skip_unauthorized"
+KEY_MAX_REQUESTS_PER_SECOND = "max_requests_per_second"
 
 REQUIRED_PARAMETERS = [
     KEY_ENDPOINTS,
@@ -48,13 +49,16 @@ class Component(ComponentBase):
 
         # Initialize the client
         self.client = AsanaClient(destination=self.tables_out_path, api_token=self.token, incremental=self.incremental,
-                                  debug=self.params.get(KEY_DEBUG))
+                                  debug=self.params.get(KEY_DEBUG), skip_unauthorized=self.skip,
+                                  max_requests_per_second=self.params.get('max_requests_per_second'))
 
         # Validate user inputs
         self.validate_user_inputs(self.params)
 
         # User input parameters
-        endpoints = self.params.get(KEY_ENDPOINTS)
+        endpoints_raw = self.params.get(KEY_ENDPOINTS)
+
+        endpoints = [k for k, v in endpoints_raw.items() if v]
 
         if self.incremental:
             logging.info(f"Timestamp used for incremental fetching: {self.date_from}")
@@ -70,6 +74,7 @@ class Component(ComponentBase):
         self.write_state_file(state)
 
         logging.info("Extraction finished")
+        logging.debug(f"Requests count: {self.client.counter}")
 
     def get_date_from(self):
         params = self.configuration.parameters
@@ -105,9 +110,6 @@ class Component(ComponentBase):
                 raise UserException(
                     'Parameters are required when [Projects - User Defined] is selected. Please '
                     'define your project IDs.')
-            # Priortizing user_defined_projects endpoint
-            self.client.request_order.remove('projects')
-            self.client.request_order.remove('archived_projects')
 
             self.client.requested_endpoints.append('projects')
             self.client.delimit_string(params[KEY_PROJECT_ID], 'projects')
