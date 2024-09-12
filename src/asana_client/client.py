@@ -71,7 +71,7 @@ ROOT_ENDPOINTS = {
 
 REQUESTED_ENDPOINTS = []
 
-DEFAULT_MAX_REQUESTS_PER_SECOND = 4
+DEFAULT_MAX_REQUESTS_PER_SECOND = 2.5
 
 # The number of objects to return per page. The value must be between 1 and 100.
 API_PAGE_LIMIT = 100
