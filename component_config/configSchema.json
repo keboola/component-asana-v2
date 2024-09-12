@@ -156,7 +156,7 @@
       "propertyOrder": 600
     },
     "max_requests_per_second": {
-      "type": "string",
+      "type": "number",
       "title": "Maximum number of requests per second for your licence (default 4)",
       "propertyOrder": 700
     }
