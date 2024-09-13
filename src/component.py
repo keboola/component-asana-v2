@@ -51,7 +51,7 @@ class Component(ComponentBase):
         # Initialize the client
         self.client = AsanaClient(destination=self.tables_out_path, api_token=self.token, incremental=self.incremental,
                                   debug=self.params.get(KEY_DEBUG), skip_unauthorized=self.skip,
-                                  max_requests_per_second=self.params.get('max_requests_per_second'),
+                                  max_requests_per_second=self.params.get(KEY_MAX_REQUESTS_PER_SECOND, 2.5),
                                   membership_timestamp=self.params.get(KEY_TASK_MEMBERSHIP_TIMESTAMP, False)
                                   )
 
