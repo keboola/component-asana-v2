@@ -75,6 +75,7 @@ class Component(ComponentBase):
         except AsanaClientException as e:
             raise UserException(f"Failed to fetch data, exception: {e}")
 
+        logging.info("Extraction finished, proccessing data")
         self.process_temp()
 
         # Always storing the last extraction date

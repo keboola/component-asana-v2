@@ -6,6 +6,8 @@ import os
 
 from httpx import HTTPStatusError
 from keboola.http_client.async_client import AsyncHttpClient
+import tracemalloc
+
 
 BASE_URL = 'https://app.asana.com/api/1.0/'
 
@@ -92,6 +94,7 @@ class AsanaClient(AsyncHttpClient):
         self.counter = 0
         self.skip_unauthorized = skip_unauthorized
         self.membership_timestamp = membership_timestamp
+        self.tracemalloc = tracemalloc.start()
         super().__init__(base_url=BASE_URL,
                          auth=(api_token, ''),
                          retries=5,
@@ -195,6 +198,12 @@ class AsanaClient(AsyncHttpClient):
                 self.log_size_in_mb()
 
         self.requested_endpoints.append(endpoint)
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
+        out = ""
+        for stat in top_stats[:10]:
+            out += f"{stat}\n"
+        logging.debug(f"Top stats: {out}")
 
     # TODO - Remove this method
     def log_size_in_mb(self):
