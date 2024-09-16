@@ -2,11 +2,10 @@ import asyncio
 import itertools
 import json
 import logging
+import os
 
 from httpx import HTTPStatusError
 from keboola.http_client.async_client import AsyncHttpClient
-
-from asana_client.mapping_parser import MappingParser
 
 BASE_URL = 'https://app.asana.com/api/1.0/'
 
@@ -82,9 +81,10 @@ class AsanaClientException(Exception):
 
 
 class AsanaClient(AsyncHttpClient):
-    def __init__(self, destination, api_token, incremental=False, debug: bool = False, skip_unauthorized: bool = False,
-                 max_requests_per_second: int = DEFAULT_MAX_REQUESTS_PER_SECOND, membership_timestamp: bool = False):
-        self.tables_out_path = destination
+    def __init__(self, temp_dir, api_token, incremental=False, debug: bool = False, skip_unauthorized: bool = False,
+                 max_requests_per_second: int = DEFAULT_MAX_REQUESTS_PER_SECOND, membership_timestamp: bool = False,
+                 ):
+        self.temp_dir = temp_dir
         self.incremental = incremental
         self.requested_endpoints = REQUESTED_ENDPOINTS
         self.root_endpoints = ROOT_ENDPOINTS
@@ -101,6 +101,8 @@ class AsanaClient(AsyncHttpClient):
                          debug=debug)
         with open('./src/asana_client/endpoint_mappings.json', 'r') as m:
             self.mappings = json.load(m)
+
+        return
 
     async def fetch(self, endpoints, completed_since=None):
 
@@ -152,7 +154,6 @@ class AsanaClient(AsyncHttpClient):
 
         # Inputs required for the parser and requests
         required_endpoint = self.request_map[endpoint].get('required')
-        endpoint_mapping = self.mappings[self.request_map[endpoint]['mapping']]
 
         # For endpoints required data from parent endpoint
         if required_endpoint:
@@ -174,38 +175,43 @@ class AsanaClient(AsyncHttpClient):
 
             if data:
                 if endpoint in requested_endpoints:
-                    MappingParser(
-                        destination=f'{self.tables_out_path}/',
-                        endpoint=self.request_map[endpoint]['mapping'],
-                        endpoint_data=data,
-                        mapping=endpoint_mapping,
-                        parent_key=i_id,
-                        incremental=self.incremental,
-                        add_timestamp=self.membership_timestamp
-                    )
+                    self.save_to_temp_file(endpoint, data, i_id)
 
                 # Saving endpoints that are parent
                 if endpoint in self.root_endpoints:
                     self.root_endpoints[endpoint] = self.root_endpoints[endpoint] + data
+                    self.log_size_in_mb()
 
         else:
             endpoint_url = self.request_map[endpoint]['endpoint']
             data = await self._get_request(endpoint=endpoint_url)
 
             if endpoint in requested_endpoints:
-                MappingParser(
-                    destination=f'{self.tables_out_path}/',
-                    endpoint=self.request_map[endpoint]['mapping'],
-                    endpoint_data=data,
-                    mapping=endpoint_mapping,
-                    incremental=self.incremental
-                )
+                self.save_to_temp_file(endpoint, data)
 
             # Saving endpoints that are parent
             if endpoint in self.root_endpoints:
                 self.root_endpoints[endpoint] = self.root_endpoints[endpoint] + data
+                self.log_size_in_mb()
 
         self.requested_endpoints.append(endpoint)
+
+    # TODO - Remove this method
+    def log_size_in_mb(self):
+        if (self.counter % 100 == 0):
+            import sys
+            size_in_bytes = sys.getsizeof(self.root_endpoints)
+            size_in_mb = size_in_bytes / (1024 * 1024)
+            logging.info(f"Size of root_endpoints: {size_in_mb} MB")
+
+    def save_to_temp_file(self, endpoint, data, parent_key=None):
+        path = os.path.join(self.temp_dir, endpoint)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        file_path = os.path.join(path, f"---{parent_key}---{self.counter}.json")
+        with open(file_path, 'w') as temp_file:
+            json.dump(data, temp_file)
+        logging.info(f"Saved data for {endpoint} to {file_path}")
 
     def delimit_string(self, id_str, endpoint):
         """
