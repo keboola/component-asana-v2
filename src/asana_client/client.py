@@ -198,11 +198,10 @@ class AsanaClient(AsyncHttpClient):
 
     # TODO - Remove this method
     def log_size_in_mb(self):
-        if (self.counter % 100 == 0):
-            import sys
-            size_in_bytes = sys.getsizeof(self.root_endpoints)
-            size_in_mb = size_in_bytes / (1024 * 1024)
-            logging.info(f"Size of root_endpoints: {size_in_mb} MB")
+        import sys
+        size_in_bytes = sys.getsizeof(self.root_endpoints)
+        size_in_mb = size_in_bytes / (1024 * 1024)
+        logging.info(f"Size of root_endpoints: {size_in_mb} MB")
 
     def save_to_temp_file(self, endpoint, data, parent_key=None):
         path = os.path.join(self.temp_dir, endpoint)
