@@ -119,11 +119,25 @@ class AsanaClient(AsyncHttpClient):
                 tasks.append(self._fetch(r, completed_since=completed_since, requested_endpoints=endpoints))
         await asyncio.gather(*tasks)
 
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
+        out = ""
+        for stat in top_stats[:10]:
+            out += f"{stat}\n"
+        logging.debug(f"1st stage: \n {out}")
+
         tasks = []
         for r in ['users_details', 'user_defined_projects', 'archived_projects', 'projects_sections', 'projects_tasks']:
             if r in endpoints_needed:
                 tasks.append(self._fetch(r, completed_since=completed_since, requested_endpoints=endpoints))
         await asyncio.gather(*tasks)
+
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
+        out = ""
+        for stat in top_stats[:10]:
+            out += f"{stat}\n"
+        logging.debug(f"2nd stage: \n {out}")
 
         tasks = []
         for r in ['projects_sections_tasks', 'projects_tasks_details',
@@ -131,6 +145,13 @@ class AsanaClient(AsyncHttpClient):
             if r in endpoints_needed:
                 tasks.append(self._fetch(r, completed_since=completed_since, requested_endpoints=endpoints))
         await asyncio.gather(*tasks)
+
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
+        out = ""
+        for stat in top_stats[:10]:
+            out += f"{stat}\n"
+        logging.debug(f"3rd stage: \n {out}")
 
     async def _fetch(self, endpoint, completed_since=None, requested_endpoints: list = None):
         """
@@ -203,7 +224,7 @@ class AsanaClient(AsyncHttpClient):
         out = ""
         for stat in top_stats[:10]:
             out += f"{stat}\n"
-        logging.debug(f"Top stats: {out}")
+        logging.debug(f"Top stats for {endpoint}: \n {out}")
 
     # TODO - Remove this method
     def log_size_in_mb(self):
