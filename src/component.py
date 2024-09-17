@@ -38,7 +38,7 @@ REQUIRED_IMAGE_PARS = []
 class Component(ComponentBase):
 
     def __init__(self):
-        super().__init__()
+        super().__init__(data_path_override='./data/')
         self.client = None
         self.params = self.configuration.parameters
         self.date_from = self.get_date_from()
@@ -87,7 +87,8 @@ class Component(ComponentBase):
         logging.debug(f"Requests count: {self.client.counter}")
 
     def process_temp(self):
-        for endpoint in os.listdir(self.temp_dir):
+        # for endpoint in os.listdir(self.temp_dir):
+        for endpoint in [e for e in os.listdir(self.temp_dir) if os.path.isdir(os.path.join(self.temp_dir, e))]:
             with open('./src/asana_client/endpoint_mappings.json', 'r') as m:
                 mappings = json.load(m)
 

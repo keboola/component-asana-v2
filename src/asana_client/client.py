@@ -75,7 +75,7 @@ REQUESTED_ENDPOINTS = []
 DEFAULT_MAX_REQUESTS_PER_SECOND = 2.5
 
 # The number of objects to return per page. The value must be between 1 and 100.
-API_PAGE_LIMIT = 100
+API_PAGE_LIMIT = 10
 
 
 class AsanaClientException(Exception):
@@ -204,7 +204,6 @@ class AsanaClient(AsyncHttpClient):
                 # Saving endpoints that are parent
                 if endpoint in self.root_endpoints:
                     self.root_endpoints[endpoint] = self.root_endpoints[endpoint] + data
-                    self.log_size_in_mb()
 
         else:
             endpoint_url = self.request_map[endpoint]['endpoint']
@@ -216,7 +215,6 @@ class AsanaClient(AsyncHttpClient):
             # Saving endpoints that are parent
             if endpoint in self.root_endpoints:
                 self.root_endpoints[endpoint] = self.root_endpoints[endpoint] + data
-                self.log_size_in_mb()
 
         self.requested_endpoints.append(endpoint)
         snapshot = tracemalloc.take_snapshot()
@@ -225,13 +223,6 @@ class AsanaClient(AsyncHttpClient):
         for stat in top_stats[:10]:
             out += f"{stat}\n"
         logging.debug(f"Top stats for {endpoint}: \n {out}")
-
-    # TODO - Remove this method
-    def log_size_in_mb(self):
-        import sys
-        size_in_bytes = sys.getsizeof(self.root_endpoints)
-        size_in_mb = size_in_bytes / (1024 * 1024)
-        logging.info(f"Size of root_endpoints: {size_in_mb} MB")
 
     def save_to_temp_file(self, endpoint, data, parent_key=None):
         path = os.path.join(self.temp_dir, endpoint)
@@ -299,6 +290,10 @@ class AsanaClient(AsyncHttpClient):
             try:
                 requested_data = [r['data']] if isinstance(r['data'], dict) else r['data']
                 data_out = data_out + requested_data
+
+                if len(data_out) > 10:
+                    self.save_to_temp_file(endpoint.split('/')[-1].split("?")[0], data_out)
+                    data_out = []
             except KeyError:
                 logging.warning(f"Failed to parse data from response: {r.json()}")
 
