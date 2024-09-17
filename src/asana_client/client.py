@@ -283,7 +283,6 @@ class AsanaClient(AsyncHttpClient):
                         self.root_endpoints[endpoint] = self.root_endpoints[endpoint] + data_out
                     data_out = []
 
-
             except KeyError:
                 logging.warning(f"Failed to parse data from response: {r.json()}")
 
