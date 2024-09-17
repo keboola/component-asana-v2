@@ -167,7 +167,8 @@ class AsanaClient(AsyncHttpClient):
                 endpoint_url = endpoint_url.replace(
                     '{' + f'{required_endpoint}' + '_id}', i_id)
 
-                tasks.append(self._get_request(endpoint=endpoint_url, params=request_params))
+                tasks.append(self._get_request(endpoint=endpoint_url, params=request_params,
+                                               requested_endpoints=requested_endpoints, i_id=i_id))
 
             data_r = await asyncio.gather(*tasks)
             data = list(itertools.chain.from_iterable(data_r))
@@ -190,7 +191,7 @@ class AsanaClient(AsyncHttpClient):
 
         else:
             endpoint_url = self.request_map[endpoint]['endpoint']
-            data = await self._get_request(endpoint=endpoint_url)
+            data = await self._get_request(endpoint=endpoint_url, requested_endpoints=requested_endpoints)
 
             if endpoint in requested_endpoints:
                 MappingParser(
@@ -233,7 +234,7 @@ class AsanaClient(AsyncHttpClient):
             if required:
                 self.find_dependencies(required, endpoints_needed)
 
-    async def _get_request(self, endpoint, params=None):
+    async def _get_request(self, endpoint, params=None, requested_endpoints=None, i_id=None):
         """
         Generic Get request
         """
@@ -264,6 +265,25 @@ class AsanaClient(AsyncHttpClient):
             try:
                 requested_data = [r['data']] if isinstance(r['data'], dict) else r['data']
                 data_out = data_out + requested_data
+
+                if len(data_out) > 1000:
+                    if endpoint in requested_endpoints:
+                        MappingParser(
+                            destination=f'{self.tables_out_path}/',
+                            endpoint=self.request_map[endpoint]['mapping'],
+                            endpoint_data=data_out,
+                            mapping=self.mappings[self.request_map[endpoint]['mapping']],
+                            parent_key=i_id,
+                            incremental=self.incremental,
+                            add_timestamp=self.membership_timestamp
+                        )
+
+                    # Saving endpoints that are parent
+                    if endpoint in self.root_endpoints:
+                        self.root_endpoints[endpoint] = self.root_endpoints[endpoint] + data_out
+                    data_out = []
+
+
             except KeyError:
                 logging.warning(f"Failed to parse data from response: {r.json()}")
 
