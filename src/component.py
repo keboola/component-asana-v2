@@ -8,8 +8,11 @@ import pandas as pd
 from typing import Dict
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
+import tempfile
 
-from asana_client.client import AsanaClient, AsanaClientException
+from asana_client.client import AsanaClient, AsanaClientException, REQUEST_MAP
+from asana_client.mapping_parser import MappingParser
+import json
 
 # configuration variables
 KEY_DEBUG = 'debug'
@@ -35,7 +38,7 @@ REQUIRED_IMAGE_PARS = []
 class Component(ComponentBase):
 
     def __init__(self):
-        super().__init__()
+        super().__init__(data_path_override='./data/')
         self.client = None
         self.params = self.configuration.parameters
         self.date_from = self.get_date_from()
@@ -43,13 +46,14 @@ class Component(ComponentBase):
         self.skip = self.params.get(KEY_SKIP_UNAUTHORIZED, False)
         self.incremental = self.params.get(KEY_INCREMENTAL_LOAD)
         self.token = self.params.get(KEY_TOKEN)
+        self.temp_dir = tempfile.mkdtemp()
 
     def run(self):
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
         self.validate_image_parameters(REQUIRED_IMAGE_PARS)
 
         # Initialize the client
-        self.client = AsanaClient(destination=self.tables_out_path, api_token=self.token, incremental=self.incremental,
+        self.client = AsanaClient(temp_dir=self.temp_dir, api_token=self.token, incremental=self.incremental,
                                   debug=self.params.get(KEY_DEBUG), skip_unauthorized=self.skip,
                                   max_requests_per_second=self.params.get(KEY_MAX_REQUESTS_PER_SECOND, 2.5),
                                   membership_timestamp=self.params.get(KEY_TASK_MEMBERSHIP_TIMESTAMP, False)
@@ -71,6 +75,9 @@ class Component(ComponentBase):
         except AsanaClientException as e:
             raise UserException(f"Failed to fetch data, exception: {e}")
 
+        logging.info("Extraction finished, proccessing data")
+        self.process_temp()
+
         # Always storing the last extraction date
         # if self.incremental:
         state = {'last_run': self.now}
@@ -78,6 +85,29 @@ class Component(ComponentBase):
 
         logging.info("Extraction finished")
         logging.debug(f"Requests count: {self.client.counter}")
+
+    def process_temp(self):
+        # for endpoint in os.listdir(self.temp_dir):
+        for endpoint in [e for e in os.listdir(self.temp_dir) if os.path.isdir(os.path.join(self.temp_dir, e))]:
+            with open('./src/asana_client/endpoint_mappings.json', 'r') as m:
+                mappings = json.load(m)
+
+            endpoint_mapping = mappings[REQUEST_MAP[endpoint]['mapping']]
+            for file in os.listdir(f"{self.temp_dir}/{endpoint}"):
+                parent_key = file.split('---')[1]
+
+                with open(f"{self.temp_dir}/{endpoint}/{file}", 'r') as f:
+                    data = json.load(f)
+
+                    MappingParser(
+                        destination=f'{self.tables_out_path}/',
+                        endpoint=REQUEST_MAP[endpoint]['mapping'],
+                        endpoint_data=data,
+                        mapping=endpoint_mapping,
+                        parent_key=parent_key,
+                        incremental=self.incremental,
+                        add_timestamp=self.params.get(KEY_TASK_MEMBERSHIP_TIMESTAMP, False)
+                    )
 
     def get_date_from(self):
         params = self.configuration.parameters
