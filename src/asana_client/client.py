@@ -92,6 +92,9 @@ class AsanaClient(AsyncHttpClient):
         self.counter = 0
         self.skip_unauthorized = skip_unauthorized
         self.membership_timestamp = membership_timestamp
+        self.endpoints_needed = set()
+        self.completed_since = None
+        self.requested_endpoints = None
         super().__init__(base_url=BASE_URL,
                          auth=(api_token, ''),
                          retries=5,
@@ -104,27 +107,26 @@ class AsanaClient(AsyncHttpClient):
 
     async def fetch(self, endpoints, completed_since=None):
 
-        endpoints_needed = self.get_endpoints_needed(endpoints)
+        self.endpoints_needed = self.get_endpoints_needed(endpoints)
+        self.requested_endpoints = endpoints
+        self.completed_since = completed_since
 
         await self._fetch(endpoint="workspaces", completed_since=completed_since, requested_endpoints=endpoints)
 
+        await self.process_endpoints_async(['users', 'projects'])
+
+        await self.process_endpoints_async(['users_details', 'user_defined_projects', 'archived_projects',
+                                            'projects_sections', 'projects_tasks'])
+
+        await self.process_endpoints_async(['projects_sections_tasks', 'projects_tasks_details',
+                                            'projects_tasks_subtasks', 'projects_tasks_stories'])
+
+    async def process_endpoints_async(self, endpoints: list):
         tasks = []
         for r in ['users', 'projects']:
-            if r in endpoints_needed:
-                tasks.append(self._fetch(r, completed_since=completed_since, requested_endpoints=endpoints))
-        await asyncio.gather(*tasks)
-
-        tasks = []
-        for r in ['users_details', 'user_defined_projects', 'archived_projects', 'projects_sections', 'projects_tasks']:
-            if r in endpoints_needed:
-                tasks.append(self._fetch(r, completed_since=completed_since, requested_endpoints=endpoints))
-        await asyncio.gather(*tasks)
-
-        tasks = []
-        for r in ['projects_sections_tasks', 'projects_tasks_details',
-                  'projects_tasks_subtasks', 'projects_tasks_stories']:
-            if r in endpoints_needed:
-                tasks.append(self._fetch(r, completed_since=completed_since, requested_endpoints=endpoints))
+            if r in self.endpoints_needed:
+                tasks.append(self._fetch(r, completed_since=self.completed_since,
+                                         requested_endpoints=self.requested_endpoints))
         await asyncio.gather(*tasks)
 
     async def _fetch(self, endpoint, completed_since=None, requested_endpoints: list = None):
