@@ -123,7 +123,7 @@ class AsanaClient(AsyncHttpClient):
 
     async def process_endpoints_async(self, endpoints: list):
         tasks = []
-        for r in ['users', 'projects']:
+        for r in endpoints:
             if r in self.endpoints_needed:
                 tasks.append(self._fetch(r, completed_since=self.completed_since,
                                          requested_endpoints=self.requested_endpoints))
