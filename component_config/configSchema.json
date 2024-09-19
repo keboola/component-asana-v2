@@ -154,6 +154,12 @@
       "format": "checkbox",
       "description": "If set to true, the component will skip objects that could not be retrieved from the API.",
       "propertyOrder": 600
+    },
+    "max_requests_per_second": {
+      "type": "number",
+      "default": 2.5,
+      "title": "Maximum number of requests per second for your licence (default 2.5)",
+      "propertyOrder": 700
     }
   }
 }

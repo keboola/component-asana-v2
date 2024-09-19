@@ -1,18 +1,15 @@
+import asyncio
 import logging
 import os
 import datetime
 import pytz
-import requests
 import dateparser
 import pandas as pd
-import json
-
-from retry import retry
 from typing import Dict
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
-from mapping_parser import MappingParser
+from asana_client.client import AsanaClient, AsanaClientException
 
 # configuration variables
 KEY_DEBUG = 'debug'
@@ -24,6 +21,7 @@ KEY_PROJECT_ID = 'project_id'
 KEY_LOAD_OPTIONS = "load_options"
 KEY_DATE_FROM = "date_from"
 KEY_SKIP_UNAUTHORIZED = "skip_unauthorized"
+KEY_MAX_REQUESTS_PER_SECOND = "max_requests_per_second"
 KEY_TASK_MEMBERSHIP_TIMESTAMP = "task_membership_timestamp"
 
 REQUIRED_PARAMETERS = [
@@ -33,121 +31,53 @@ REQUIRED_PARAMETERS = [
 ]
 REQUIRED_IMAGE_PARS = []
 
-BASE_URL = 'https://app.asana.com/api/1.0/'
-REQUEST_MAP = {
-    'workspaces': {
-        'endpoint': 'workspaces',
-        'mapping': 'workspaces'},
-    'users': {
-        'endpoint': 'users?workspace={workspaces_id}',
-        'required': 'workspaces', 'mapping': 'users'},
-    'users_details': {
-        'endpoint': 'users/{users_id}',
-        'required': 'users', 'mapping': 'users_details'},
-    'user_defined_projects': {
-        'endpoint': 'projects/{projects_id}',
-        'required': 'projects', 'mapping': 'projects_details'},
-    'projects': {
-        'endpoint': 'workspaces/{workspaces_id}/projects',
-        'required': 'workspaces', 'mapping': 'projects'},
-    'projects_details': {
-        'endpoint': 'projects/{projects_id}',
-        'required': 'projects', 'mapping': 'projects_details'},
-    'projects_sections': {
-        'endpoint': 'projects/{projects_id}/sections',
-        'required': 'projects', 'mapping': 'sections'},
-    "projects_sections_tasks": {
-        'endpoint': 'sections/{projects_sections_id}/tasks',
-        'required': 'projects_sections', 'mapping': 'section_tasks'},
-    'projects_tasks': {
-        'endpoint': 'projects/{projects_id}/tasks',
-        'required': 'projects', 'mapping': 'tasks'},
-    'projects_tasks_details': {
-        'endpoint': 'tasks/{projects_tasks_id}',
-        'required': 'projects_tasks', 'mapping': 'task_details'},
-    'projects_tasks_subtasks': {
-        'endpoint': 'tasks/{projects_tasks_id}/subtasks',
-        'required': 'projects_tasks', 'mapping': 'task_subtasks'},
-    'projects_tasks_stories': {
-        'endpoint': 'tasks/{projects_tasks_id}/stories',
-        'required': 'projects_tasks', 'mapping': 'task_stories'}
-}
-
-ROOT_ENDPOINTS = {
-    'workspaces': [],
-    'users': [],
-    'projects': [],
-    'projects_sections': [],
-    'projects_tasks': [],
-    'tasks': []
-}
-
-REQUESTED_ENDPOINTS = []
-REQUEST_ORDER = [
-    'workspaces',
-    'users',
-    'users_details',
-    'user_defined_projects',
-    'projects',
-    'archived_projects',
-    'projects_sections',
-    'projects_sections_tasks',
-    'projects_tasks',
-    'projects_tasks_details',
-    'projects_tasks_subtasks',
-    'projects_tasks_stories'
-]
-
-try:
-    with open('src/endpoint_mappings.json', 'r') as m:
-        MAPPINGS = json.load(m)
-except FileNotFoundError:
-    with open('../src/endpoint_mappings.json', 'r') as m:
-        MAPPINGS = json.load(m)
-
-
-class RetryableError(Exception):
-    pass
-
 
 class Component(ComponentBase):
+
     def __init__(self):
         super().__init__()
-        params = self.configuration.parameters
-        self.skip = params.get(KEY_SKIP_UNAUTHORIZED, False)
-        self.incremental = params.get(KEY_INCREMENTAL_LOAD)
-        self.token = params.get(KEY_TOKEN)
+        self.client = None
+        self.params = self.configuration.parameters
+        self.date_from = self.get_date_from()
+        self.now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        self.skip = self.params.get(KEY_SKIP_UNAUTHORIZED, False)
+        self.incremental = self.params.get(KEY_INCREMENTAL_LOAD)
+        self.token = self.params.get(KEY_TOKEN)
 
     def run(self):
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
         self.validate_image_parameters(REQUIRED_IMAGE_PARS)
 
-        now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-
-        params = self.configuration.parameters
+        # Initialize the client
+        self.client = AsanaClient(destination=self.tables_out_path, api_token=self.token, incremental=self.incremental,
+                                  debug=self.params.get(KEY_DEBUG), skip_unauthorized=self.skip,
+                                  max_requests_per_second=self.params.get(KEY_MAX_REQUESTS_PER_SECOND, 2.5),
+                                  membership_timestamp=self.params.get(KEY_TASK_MEMBERSHIP_TIMESTAMP, False)
+                                  )
 
         # Validate user inputs
-        # & prep parameters for user_defined_projects
-        self.validate_user_inputs(params)
-
-        date_from = self.get_date_from()
+        self.validate_user_inputs(self.params)
 
         # User input parameters
-        endpoints = params.get(KEY_ENDPOINTS)
+        endpoints_raw = self.params.get(KEY_ENDPOINTS)
+
+        endpoints = [k for k, v in endpoints_raw.items() if v]
 
         if self.incremental:
-            logging.info(f"Timestamp used for incremental fetching: {date_from}")
+            logging.info(f"Timestamp used for incremental fetching: {self.date_from}")
 
-        for r in REQUEST_ORDER:
-            if r == 'workspaces' or endpoints[r]:
-                self.fetch(endpoint=r, incremental=self.incremental, completed_since=date_from)
+        try:
+            asyncio.run(self.client.fetch(endpoints, completed_since=self.date_from))
+        except AsanaClientException as e:
+            raise UserException(f"Failed to fetch data, exception: {e}")
 
         # Always storing the last extraction date
         # if self.incremental:
-        state = {'last_run': now}
+        state = {'last_run': self.now}
         self.write_state_file(state)
 
         logging.info("Extraction finished")
+        logging.debug(f"Requests count: {self.client.counter}")
 
     def get_date_from(self):
         params = self.configuration.parameters
@@ -183,185 +113,9 @@ class Component(ComponentBase):
                 raise UserException(
                     'Parameters are required when [Projects - User Defined] is selected. Please '
                     'define your project IDs.')
-            # Priortizing user_defined_projects endpoint
-            REQUEST_ORDER.remove('projects')
-            REQUEST_ORDER.remove('archived_projects')
 
-            REQUESTED_ENDPOINTS.append('projects')
-            self._delimit_string(params[KEY_PROJECT_ID], 'projects')
-
-    @retry(RetryableError, tries=5, delay=1, backoff=2)
-    def _get_request(self, endpoint, params=None):
-        """
-        Generic Get request
-        """
-
-        request_url = BASE_URL + endpoint
-        headers = {
-            'Authorization': f'Bearer {self.token}',
-            'Content-Type': 'application/json'
-        }
-
-        # Pagination parameters
-        if not params:
-            params = {}
-        params['limit'] = 100
-        pagination_offset = None
-
-        data_out = []
-        while True:
-            # If pagination parameter exist
-            if pagination_offset:
-                params['offset'] = pagination_offset
-
-            logging.debug(f'{endpoint} Parameters: {params}')
-            r = requests.get(url=request_url, headers=headers, params=params)
-
-            if r.status_code in [401]:
-                logging.error(
-                    'Authorization failed. Please validate your credentials.')
-                raise RetryableError(f"Retrying on exception with code {r.status_code}")
-            elif r.status_code in [402, 451]:
-                raise UserException(f"Failed request on exception with code {r.status_code} : {r.json()}")
-
-            elif r.status_code in [429, 500, 503]:
-                logging.error(f'Request issue:{r.status_code} {r.json()}')
-                raise RetryableError(f"Retrying on exception with code {r.status_code}")
-            elif r.status_code in [400, 403, 404]:
-                if self.skip:
-                    logging.warning(f"Skipping resource {request_url}, reason: {r.json()}")
-                    break
-                else:
-                    raise UserException(f"Cannot access resource {request_url}, reason: {r.json()}")
-
-            elif r.status_code not in [200, 201]:
-                logging.error(f'Request Failed: code - {r.status_code} :{r.json()}')
-
-                if 'errors' in r.json():
-                    for err in r.json()['errors']:
-                        logging.error(err['message']) if 'message' in err else ''
-                raise RetryableError(f"Retrying on exception with code {r.status_code}")
-
-            try:
-                requested_data = [r.json()['data']] if type(
-                    r.json()['data']) == dict else r.json()['data']
-                data_out = data_out + requested_data
-            except KeyError:
-                logging.warning(f"Failed to parse data from response: {r.json()}")
-
-            # Loop
-            if r.json().get('next_page'):
-                pagination_offset = r.json()['next_page']['offset']
-            else:
-                params.pop("offset", None)
-                break
-
-        return data_out
-
-    def get_request(self, endpoint, params=None):
-        try:
-            data_out = self._get_request(endpoint=endpoint, params=params)
-            return data_out
-        except RetryableError as e:
-            raise UserException(f"The component was unable to fetch data for endpoint {endpoint}, {e}") from e
-
-    def fetch(self, endpoint, incremental, completed_since=None):
-        """
-        Processing/Fetching data
-        """
-
-        logging.info(f'Requesting {endpoint}...')
-
-        # Prep-ing request parameters
-        request_params = {}
-        if endpoint == 'archived_projects':
-            endpoint = 'projects'
-            request_params['archived'] = True
-        elif endpoint == 'projects':
-            request_params['archived'] = False
-
-        # Incremental load
-        """
-        Used for endpoint https://developers.asana.com/reference/gettasksforproject
-        """
-        if endpoint == "projects_tasks":
-            if self.incremental and completed_since:
-                request_params['completed_since'] = completed_since
-
-        # Inputs required for the parser and requests
-        required_endpoint = REQUEST_MAP[endpoint].get('required')
-        endpoint_mapping = MAPPINGS[REQUEST_MAP[endpoint]['mapping']]
-
-        # Checking if parent endpoint is required
-        if required_endpoint:
-            self.fetch(
-                required_endpoint, incremental=self.incremental, completed_since=completed_since)\
-                if required_endpoint not in REQUESTED_ENDPOINTS else ''
-
-        # For endpoints required data from parent endpoint
-        if required_endpoint:
-
-            if endpoint == "projects_tasks_details":
-
-                logging.debug(f"Fetching {len(ROOT_ENDPOINTS['projects_tasks'])} tasks.")
-
-            for i in ROOT_ENDPOINTS[required_endpoint]:
-                i_id = i['gid']
-                endpoint_url = REQUEST_MAP[endpoint]['endpoint']
-                endpoint_url = endpoint_url.replace(
-                    '{' + f'{required_endpoint}' + '_id}', i_id)
-
-                data = self.get_request(
-                    endpoint=endpoint_url, params=request_params)
-                # self._output(df_json=data, filename=endpoint)
-                if data:
-                    MappingParser(
-                        destination=f'{self.tables_out_path}/',
-                        # endpoint=endpoint,
-                        endpoint=REQUEST_MAP[endpoint]['mapping'],
-                        endpoint_data=data,
-                        mapping=endpoint_mapping,
-                        parent_key=i_id,
-                        incremental=incremental,
-                        add_timestamp=self.configuration.parameters.get(KEY_TASK_MEMBERSHIP_TIMESTAMP, False)
-                    )
-
-                    # Saving endpoints that are parent
-                    if endpoint in ROOT_ENDPOINTS:
-                        ROOT_ENDPOINTS[endpoint] = ROOT_ENDPOINTS[endpoint] + data
-
-        else:
-            endpoint_url = REQUEST_MAP[endpoint]['endpoint']
-            data = self.get_request(endpoint=endpoint_url)
-
-            MappingParser(
-                destination=f'{self.tables_out_path}/',
-                # endpoint=endpoint,
-                endpoint=REQUEST_MAP[endpoint]['mapping'],
-                endpoint_data=data,
-                mapping=endpoint_mapping,
-                incremental=incremental
-            )
-
-            # Saving endpoints that are parent
-            if endpoint in ROOT_ENDPOINTS:
-                ROOT_ENDPOINTS[endpoint] = ROOT_ENDPOINTS[endpoint] + data
-
-        REQUESTED_ENDPOINTS.append(endpoint)
-
-    @staticmethod
-    def _delimit_string(id_str, endpoint):
-        """
-        Delimiting the list of ids and add them into the respective
-        endpoint to bypass original request order
-        """
-
-        id_str = id_str.replace(' ', '')
-        id_list = id_str.split(',')
-
-        for i in id_list:
-            tmp = {'gid': i}
-            ROOT_ENDPOINTS[endpoint].append(tmp)
+            self.client.requested_endpoints.append('projects')
+            self.client.delimit_string(params[KEY_PROJECT_ID], 'projects')
 
     def _output(self, df_json, filename):
         output_filename = f'{self.tables_out_path}/{filename}.csv'
