@@ -94,7 +94,7 @@ class AsanaClient(AsyncHttpClient):
         self.membership_timestamp = membership_timestamp
         self.endpoints_needed = set()
         self.completed_since = None
-        self.requested_endpoints = None
+        self.requested_endpoints = []
         super().__init__(base_url=BASE_URL,
                          auth=(api_token, ''),
                          retries=5,
