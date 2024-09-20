@@ -113,10 +113,16 @@ class AsanaClient(AsyncHttpClient):
 
         await self._fetch(endpoint="workspaces", completed_since=completed_since, requested_endpoints=endpoints)
 
-        await self.process_endpoints_async(['users', 'projects'])
+        first = ['users', 'projects']
+        second = ['users_details', 'user_defined_projects', 'archived_projects', 'projects_sections', 'projects_tasks']
 
-        await self.process_endpoints_async(['users_details', 'user_defined_projects', 'archived_projects',
-                                            'projects_sections', 'projects_tasks'])
+        if 'user_defined_projects' in self.endpoints_needed:
+            first.remove('projects')
+            second.remove('archived_projects')
+
+        await self.process_endpoints_async(first)
+
+        await self.process_endpoints_async(second)
 
         await self.process_endpoints_async(['projects_sections_tasks', 'projects_tasks_details',
                                             'projects_tasks_subtasks', 'projects_tasks_stories'])
