@@ -6,7 +6,7 @@ import logging
 from httpx import HTTPStatusError
 from keboola.http_client.async_client import AsyncHttpClient
 
-from asana_client.mapping_parser import MappingParser
+from .mapping_parser import MappingParser
 
 BASE_URL = 'https://app.asana.com/api/1.0/'
 
@@ -102,7 +102,7 @@ class AsanaClient(AsyncHttpClient):
                          max_requests_per_second=max_requests_per_second,
                          timeout=10,
                          debug=debug)
-        with open('./src/asana_client/endpoint_mappings.json', 'r') as m:
+        with open('asana_client/endpoint_mappings.json', 'r') as m:
             self.mappings = json.load(m)
 
     async def fetch(self, endpoints, completed_since=None):
@@ -115,6 +115,8 @@ class AsanaClient(AsyncHttpClient):
 
         first = ['users', 'projects']
         second = ['users_details', 'user_defined_projects', 'archived_projects', 'projects_sections', 'projects_tasks']
+        third = ['projects_sections_tasks', 'projects_tasks_details', 'projects_tasks_subtasks',
+                 'projects_tasks_stories']
 
         if 'user_defined_projects' in self.endpoints_needed:
             first.remove('projects')
@@ -124,8 +126,7 @@ class AsanaClient(AsyncHttpClient):
 
         await self.process_endpoints_async(second)
 
-        await self.process_endpoints_async(['projects_sections_tasks', 'projects_tasks_details',
-                                            'projects_tasks_subtasks', 'projects_tasks_stories'])
+        await self.process_endpoints_async(third)
 
     async def process_endpoints_async(self, endpoints: list):
         tasks = []
@@ -165,7 +166,9 @@ class AsanaClient(AsyncHttpClient):
         # For endpoints required data from parent endpoint
         if required_endpoint:
 
-            if endpoint == "projects_tasks_details":
+            if (endpoint == "projects_tasks_details"
+                    or endpoint == "projects_tasks_subtasks"
+                    or endpoint == "projects_tasks_stories"):
                 logging.debug(f"Fetching {len(self.root_endpoints['projects_tasks'])} tasks.")
 
             tasks = []
@@ -174,6 +177,11 @@ class AsanaClient(AsyncHttpClient):
                 endpoint_url = self.request_map[endpoint]['endpoint']
                 endpoint_url = endpoint_url.replace(
                     '{' + f'{required_endpoint}' + '_id}', i_id)
+
+                logging.debug(f"Fetching {endpoint},"
+                              f" endpoint_url {endpoint_url},"
+                              f" input_data {i},"
+                              f" request_params {request_params}")
 
                 tasks.append(self._get_request(endpoint=endpoint_url, params=request_params,
                                                requested_endpoints=requested_endpoints, i_id=i_id))
