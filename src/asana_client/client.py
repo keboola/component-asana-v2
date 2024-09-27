@@ -2,6 +2,7 @@ import asyncio
 import itertools
 import json
 import logging
+import os
 
 from httpx import HTTPStatusError
 from keboola.http_client.async_client import AsyncHttpClient
@@ -102,7 +103,9 @@ class AsanaClient(AsyncHttpClient):
                          max_requests_per_second=max_requests_per_second,
                          timeout=10,
                          debug=debug)
-        with open('./asana_client/endpoint_mappings.json', 'r') as m:
+
+        json_path = os.path.join(os.path.dirname(__file__), 'endpoint_mappings.json')
+        with open(json_path, 'r') as m:
             self.mappings = json.load(m)
 
     async def fetch(self, endpoints, completed_since=None):
