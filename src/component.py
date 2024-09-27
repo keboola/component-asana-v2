@@ -63,6 +63,9 @@ class Component(ComponentBase):
 
         endpoints = [k for k, v in endpoints_raw.items() if v]
 
+        if 'user_defined_projects' in endpoints:
+            self.client.delimit_string(self.params.get(KEY_PROJECT_ID), 'projects')
+
         if self.incremental:
             logging.info(f"Timestamp used for incremental fetching: {self.date_from}")
 
@@ -87,7 +90,8 @@ class Component(ComponentBase):
             return self.parse_date(state, date_from_raw)
         return state.get('last_run')
 
-    def validate_user_inputs(self, params):
+    @staticmethod
+    def validate_user_inputs(params):
         """
         Validating user inputs
         """
@@ -113,9 +117,6 @@ class Component(ComponentBase):
                 raise UserException(
                     'Parameters are required when [Projects - User Defined] is selected. Please '
                     'define your project IDs.')
-
-            self.client.requested_endpoints.append('projects')
-            self.client.delimit_string(params[KEY_PROJECT_ID], 'projects')
 
     def _output(self, df_json, filename):
         output_filename = f'{self.tables_out_path}/{filename}.csv'

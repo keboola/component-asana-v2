@@ -6,7 +6,7 @@ import pandas as pd
 import time
 
 
-class MappingParser():
+class MappingParser:
     def __init__(self, destination, endpoint, endpoint_data, mapping, parent_key=None, incremental=False,
                  add_timestamp=False, generate_timestamp=False):
 
