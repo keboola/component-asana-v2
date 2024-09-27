@@ -102,7 +102,7 @@ class AsanaClient(AsyncHttpClient):
                          max_requests_per_second=max_requests_per_second,
                          timeout=10,
                          debug=debug)
-        with open('asana_client/endpoint_mappings.json', 'r') as m:
+        with open('./asana_client/endpoint_mappings.json', 'r') as m:
             self.mappings = json.load(m)
 
     async def fetch(self, endpoints, completed_since=None):
