@@ -85,7 +85,7 @@ API_PAGE_LIMIT = 100
 KEY_FORBIDDEN_ENDPOINTS = 'forbidden_endpoints'
 KEY_GID = 'gid'
 KEY_GEN_ID = 'gen_id'
-TMP_FOLDER_PATH = './tmp'
+TMP_FOLDER_PATH = '/tmp'
 
 
 class AsanaClientException(Exception):
