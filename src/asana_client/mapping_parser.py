@@ -86,17 +86,17 @@ class MappingParser:
 
             self.output.append(row_json)
 
-    def _fetch_value(self, row, key):
-        '''
+    @staticmethod
+    def _fetch_value(row, key):
+        """
         Fetching value from a nested object
-        '''
+        """
         key_list = key.split('.')
         value = row
 
         try:
             for k in key_list:
                 value = value[k]
-
         except Exception:
             value = ''
 
@@ -125,7 +125,8 @@ class MappingParser:
         with open(manifest_filename, 'w') as file_out:
             json.dump(manifest, file_out)
 
-    def _add_timestamp(self, df_json):
+    @staticmethod
+    def _add_timestamp(df_json):
         current_timestamp = time.time()
         for item in df_json:
             item['timestamp'] = current_timestamp

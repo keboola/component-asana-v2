@@ -38,7 +38,7 @@ class Component(ComponentBase):
         super().__init__()
         self.client = None
         self.params = self.configuration.parameters
-        self.date_from = self.get_date_from()
+        self.date_from = self.define_date_from()
         self.now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
         self.skip = self.params.get(KEY_SKIP_UNAUTHORIZED, False)
         self.incremental = self.params.get(KEY_INCREMENTAL_LOAD)
@@ -64,7 +64,7 @@ class Component(ComponentBase):
         endpoints = [k for k, v in endpoints_raw.items() if v]
 
         if 'user_defined_projects' in endpoints:
-            self.client.delimit_string(self.params.get(KEY_PROJECT_ID), 'projects')
+            self.client.add_parent_endpoint_manually(self.params.get(KEY_PROJECT_ID), 'projects')
 
         if self.incremental:
             logging.info(f"Timestamp used for incremental fetching: {self.date_from}")
@@ -82,7 +82,7 @@ class Component(ComponentBase):
         logging.info("Extraction finished")
         logging.debug(f"Requests count: {self.client.counter}")
 
-    def get_date_from(self):
+    def define_date_from(self):
         params = self.configuration.parameters
         load_options = params.get(KEY_LOAD_OPTIONS, {})
         state = self.get_state_file()
