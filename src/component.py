@@ -22,6 +22,7 @@ KEY_LOAD_OPTIONS = "load_options"
 KEY_DATE_FROM = "date_from"
 KEY_SKIP_UNAUTHORIZED = "skip_unauthorized"
 KEY_MAX_REQUESTS_PER_SECOND = "max_requests_per_second"
+KEY_BATCH_SIZE = "batch_size"
 KEY_TASK_MEMBERSHIP_TIMESTAMP = "task_membership_timestamp"
 
 REQUIRED_PARAMETERS = [
@@ -51,7 +52,8 @@ class Component(ComponentBase):
         # Initialize the client
         self.client = AsanaClient(destination=self.tables_out_path, api_token=self.token, incremental=self.incremental,
                                   debug=self.params.get(KEY_DEBUG), skip_unauthorized=self.skip,
-                                  max_requests_per_second=self.params.get(KEY_MAX_REQUESTS_PER_SECOND, 2.5),
+                                  max_requests_per_second=self.params.get(KEY_MAX_REQUESTS_PER_SECOND, None),
+                                  batch_size=self.params.get(KEY_BATCH_SIZE, None),
                                   membership_timestamp=self.params.get(KEY_TASK_MEMBERSHIP_TIMESTAMP, False)
                                   )
 

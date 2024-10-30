@@ -10,6 +10,8 @@ from keboola.http_client.async_client import AsyncHttpClient
 
 from .mapping_parser import MappingParser
 
+DEFAULT_BATCH_SIZE = 100
+
 MAPPINGS_JSON = 'endpoint_mappings.json'
 
 BASE_URL = 'https://app.asana.com/api/1.0/'
@@ -98,7 +100,8 @@ class AsanaClientException(Exception):
 
 class AsanaClient(AsyncHttpClient):
     def __init__(self, destination, api_token, incremental=False, debug: bool = False, skip_unauthorized: bool = False,
-                 max_requests_per_second: int = DEFAULT_MAX_REQUESTS_PER_SECOND, membership_timestamp: bool = False):
+                 max_requests_per_second: int = DEFAULT_MAX_REQUESTS_PER_SECOND, membership_timestamp: bool = False,
+                 batch_size: int = DEFAULT_BATCH_SIZE):
         self.request_map_levels = None
         self.tables_out_path = destination
         self.incremental = incremental
@@ -110,6 +113,7 @@ class AsanaClient(AsyncHttpClient):
         self.membership_timestamp = membership_timestamp
         self.endpoints_needed = set()
         self.completed_since = None
+        self.batch_size = batch_size
         super().__init__(base_url=BASE_URL,
                          auth=(api_token, ''),
                          retries=3,
@@ -179,10 +183,9 @@ class AsanaClient(AsyncHttpClient):
                                     endpoint=fetched_endpoint)
         await self._parse_endpoint_data_from_tmp(fetched_endpoint)
 
-    @staticmethod
-    def _generate_batch(data, batch_size):
-        for i in range(0, len(data), batch_size):
-            yield data[i:i + batch_size]
+    def _generate_batch(self, data):
+        for i in range(0, len(data), self.batch_size):
+            yield data[i:i + self.batch_size]
 
     async def _get_multiple_batched(self, fetched_endpoint, request_params, required_endpoint_data):
 
@@ -190,7 +193,7 @@ class AsanaClient(AsyncHttpClient):
         without_forbidden_endpoints = [endpoint for endpoint in self.root_endpoints_data[required_endpoint_data] if
                                        fetched_endpoint not in endpoint.get(KEY_FORBIDDEN_ENDPOINTS, [])]
 
-        for batch_parent_endpoint_data in self._generate_batch(without_forbidden_endpoints, 50):
+        for batch_parent_endpoint_data in self._generate_batch(without_forbidden_endpoints):
             tasks = []
             for parent_endpoint_data in batch_parent_endpoint_data:
                 parent_id = parent_endpoint_data[KEY_GID]
@@ -228,16 +231,18 @@ class AsanaClient(AsyncHttpClient):
 
     async def _parse_endpoint_data_from_tmp(self, endpoint):
         # read every file in the endpoint folder
-        counter = 0
+        file_counter = 0
+        data_counter = 0
         for file in os.listdir(self._construct_tmp_folder_name(endpoint)):
-            counter += 1
+            file_counter += 1
             with open(f'{self._construct_tmp_folder_name(endpoint)}/{file}', 'r+') as f:
                 file_data = json.load(f)
                 self._save_data_of_parent_endpoint(file_data, endpoint)
-
                 file_name = file.split('.')[0]
-                # if KEY_GEN_ID in file_name:
+                data_counter += len(file_data)
                 await self._save_and_parse_endpoint_data_to_output(file_data, endpoint, i_id=file_name)
+
+        logging.debug(f"Parsed data count: {data_counter} from tmp files({file_counter}), endpoint: {endpoint}")
 
     async def _save_and_parse_endpoint_data_to_output(self, data_out, endpoint, i_id=None):
         MappingParser(
