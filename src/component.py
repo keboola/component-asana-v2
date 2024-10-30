@@ -9,7 +9,7 @@ from typing import Dict
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
-from asana_client.client import AsanaClient, AsanaClientException
+from asana_client.client import AsanaClient, AsanaClientException, DEFAULT_BATCH_SIZE, DEFAULT_MAX_REQUESTS_PER_SECOND
 
 # configuration variables
 KEY_DEBUG = 'debug'
@@ -52,8 +52,9 @@ class Component(ComponentBase):
         # Initialize the client
         self.client = AsanaClient(destination=self.tables_out_path, api_token=self.token, incremental=self.incremental,
                                   debug=self.params.get(KEY_DEBUG), skip_unauthorized=self.skip,
-                                  max_requests_per_second=self.params.get(KEY_MAX_REQUESTS_PER_SECOND, None),
-                                  batch_size=self.params.get(KEY_BATCH_SIZE, None),
+                                  max_requests_per_second=self.params.get(KEY_MAX_REQUESTS_PER_SECOND,
+                                                                          DEFAULT_MAX_REQUESTS_PER_SECOND),
+                                  batch_size=self.params.get(KEY_BATCH_SIZE, DEFAULT_BATCH_SIZE),
                                   membership_timestamp=self.params.get(KEY_TASK_MEMBERSHIP_TIMESTAMP, False)
                                   )
 
