@@ -10,8 +10,6 @@ from keboola.http_client.async_client import AsyncHttpClient
 
 from .mapping_parser import MappingParser
 
-DEFAULT_BATCH_SIZE = 100
-
 MAPPINGS_JSON = 'endpoint_mappings.json'
 
 BASE_URL = 'https://app.asana.com/api/1.0/'
@@ -80,6 +78,7 @@ REQUEST_MAP = {
 }
 
 DEFAULT_MAX_REQUESTS_PER_SECOND = 2
+DEFAULT_BATCH_SIZE = 100
 
 # The number of objects to return per page. The value must be between 1 and 100.
 API_PAGE_LIMIT = 100
@@ -94,7 +93,6 @@ class AsanaClientException(Exception):
     def __init__(self, message, status_code=None):
         super().__init__(message)
         self.status_code = status_code
-
     pass
 
 
@@ -237,14 +235,14 @@ class AsanaClient(AsyncHttpClient):
             file_counter += 1
             with open(f'{self._construct_tmp_folder_name(endpoint)}/{file}', 'r+') as f:
                 file_data = json.load(f)
-                self._save_data_of_parent_endpoint(file_data, endpoint)
+                self._save_parent_endpoint_data(file_data, endpoint)
                 file_name = file.split('.')[0]
                 data_counter += len(file_data)
-                await self._save_and_parse_endpoint_data_to_output(file_data, endpoint, i_id=file_name)
+                await self._mapping_endpoint_data_to_output(file_data, endpoint, i_id=file_name)
 
         logging.debug(f"Parsed data count: {data_counter} from tmp files({file_counter}), endpoint: {endpoint}")
 
-    async def _save_and_parse_endpoint_data_to_output(self, data_out, endpoint, i_id=None):
+    async def _mapping_endpoint_data_to_output(self, data_out, endpoint, i_id=None):
         MappingParser(
             destination=f'{self.tables_out_path}',
             endpoint=self.request_map[endpoint]['mapping'],
@@ -255,7 +253,7 @@ class AsanaClient(AsyncHttpClient):
             add_timestamp=self.membership_timestamp
         )
 
-    def _save_data_of_parent_endpoint(self, data, endpoint):
+    def _save_parent_endpoint_data(self, data, endpoint):
         for i in data:
             data_to_save = self._check_endpoint_rules(endpoint, i)
             self.root_endpoints_data[endpoint].append(data_to_save)
