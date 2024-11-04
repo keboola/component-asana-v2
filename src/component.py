@@ -9,7 +9,7 @@ from typing import Dict
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
-from asana_client.client import AsanaClient, AsanaClientException
+from asana_client.client import AsanaClient, AsanaClientException, DEFAULT_BATCH_SIZE, DEFAULT_MAX_REQUESTS_PER_SECOND
 
 # configuration variables
 KEY_DEBUG = 'debug'
@@ -22,6 +22,7 @@ KEY_LOAD_OPTIONS = "load_options"
 KEY_DATE_FROM = "date_from"
 KEY_SKIP_UNAUTHORIZED = "skip_unauthorized"
 KEY_MAX_REQUESTS_PER_SECOND = "max_requests_per_second"
+KEY_BATCH_SIZE = "batch_size"
 KEY_TASK_MEMBERSHIP_TIMESTAMP = "task_membership_timestamp"
 
 REQUIRED_PARAMETERS = [
@@ -38,7 +39,7 @@ class Component(ComponentBase):
         super().__init__()
         self.client = None
         self.params = self.configuration.parameters
-        self.date_from = self.get_date_from()
+        self.date_from = self.define_date_from()
         self.now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
         self.skip = self.params.get(KEY_SKIP_UNAUTHORIZED, False)
         self.incremental = self.params.get(KEY_INCREMENTAL_LOAD)
@@ -51,7 +52,9 @@ class Component(ComponentBase):
         # Initialize the client
         self.client = AsanaClient(destination=self.tables_out_path, api_token=self.token, incremental=self.incremental,
                                   debug=self.params.get(KEY_DEBUG), skip_unauthorized=self.skip,
-                                  max_requests_per_second=self.params.get(KEY_MAX_REQUESTS_PER_SECOND, 2.5),
+                                  max_requests_per_second=self.params.get(KEY_MAX_REQUESTS_PER_SECOND,
+                                                                          DEFAULT_MAX_REQUESTS_PER_SECOND),
+                                  batch_size=self.params.get(KEY_BATCH_SIZE, DEFAULT_BATCH_SIZE),
                                   membership_timestamp=self.params.get(KEY_TASK_MEMBERSHIP_TIMESTAMP, False)
                                   )
 
@@ -62,6 +65,9 @@ class Component(ComponentBase):
         endpoints_raw = self.params.get(KEY_ENDPOINTS)
 
         endpoints = [k for k, v in endpoints_raw.items() if v]
+
+        if 'user_defined_projects' in endpoints:
+            self.client.add_parent_endpoint_manually(self.params.get(KEY_PROJECT_ID), 'projects')
 
         if self.incremental:
             logging.info(f"Timestamp used for incremental fetching: {self.date_from}")
@@ -79,7 +85,7 @@ class Component(ComponentBase):
         logging.info("Extraction finished")
         logging.debug(f"Requests count: {self.client.counter}")
 
-    def get_date_from(self):
+    def define_date_from(self):
         params = self.configuration.parameters
         load_options = params.get(KEY_LOAD_OPTIONS, {})
         state = self.get_state_file()
@@ -87,7 +93,8 @@ class Component(ComponentBase):
             return self.parse_date(state, date_from_raw)
         return state.get('last_run')
 
-    def validate_user_inputs(self, params):
+    @staticmethod
+    def validate_user_inputs(params):
         """
         Validating user inputs
         """
@@ -113,9 +120,6 @@ class Component(ComponentBase):
                 raise UserException(
                     'Parameters are required when [Projects - User Defined] is selected. Please '
                     'define your project IDs.')
-
-            self.client.requested_endpoints.append('projects')
-            self.client.delimit_string(params[KEY_PROJECT_ID], 'projects')
 
     def _output(self, df_json, filename):
         output_filename = f'{self.tables_out_path}/{filename}.csv'
