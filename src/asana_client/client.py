@@ -77,8 +77,8 @@ REQUEST_MAP = {
         'mapping': 'task_stories'}
 }
 
-DEFAULT_MAX_REQUESTS_PER_SECOND = 2
-DEFAULT_BATCH_SIZE = 100
+DEFAULT_MAX_REQUESTS_PER_SECOND = 2.5
+DEFAULT_BATCH_SIZE = 500
 
 # The number of objects to return per page. The value must be between 1 and 100.
 API_PAGE_LIMIT = 100
@@ -328,7 +328,7 @@ class AsanaClient(AsyncHttpClient):
             except AsanaClientException as e:
                 if e.status_code == 403:
                     if self.skip_unauthorized:
-                        logging.warning(f"Skipping unauthorized request: {e}")
+                        logging.info(f"Skipping unauthorized request: {e}")
                         break
                 else:
                     raise AsanaClientException(e)
