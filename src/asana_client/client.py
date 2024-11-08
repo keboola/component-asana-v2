@@ -78,7 +78,7 @@ REQUEST_MAP = {
 }
 
 DEFAULT_MAX_REQUESTS_PER_SECOND = 2.5
-DEFAULT_BATCH_SIZE = 500
+DEFAULT_BATCH_SIZE = 1000
 
 # The number of objects to return per page. The value must be between 1 and 100.
 API_PAGE_LIMIT = 100
