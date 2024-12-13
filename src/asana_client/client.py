@@ -324,6 +324,7 @@ class AsanaClient(AsyncHttpClient):
             if pagination_offset:
                 params['offset'] = pagination_offset
 
+            r: dict = {}
             try:
                 r = await self._get(endpoint=endpoint_url, params=params)
             except AsanaClientException as e:
