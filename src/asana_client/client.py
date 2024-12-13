@@ -93,6 +93,7 @@ class AsanaClientException(Exception):
     def __init__(self, message, status_code=None):
         super().__init__(message)
         self.status_code = status_code
+
     pass
 
 
@@ -330,8 +331,7 @@ class AsanaClient(AsyncHttpClient):
                     if self.skip_unauthorized:
                         logging.warning(f"Skipping unauthorized request: {e}")
                         break
-                else:
-                    raise AsanaClientException(e)
+                raise AsanaClientException(e)
 
             try:
                 data.extend([r['data']] if isinstance(r['data'], dict) else r['data'])
