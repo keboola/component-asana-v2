@@ -21,7 +21,7 @@ REQUEST_MAP = {
         'mapping': 'workspaces'},
     'users': {
         'level': 1,
-        'endpoint_batch': '/workspaces/{workspaces_id}/users',
+        'endpoint_old': '/workspaces/{workspaces_id}/users',
         'endpoint': 'users?workspace={workspaces_id}',
         'required': 'workspaces',
         'mapping': 'users'},
