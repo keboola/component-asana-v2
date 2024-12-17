@@ -2,7 +2,7 @@ retry==0.9.2
 keboola.component==1.4.3
 dateparser==1.1.8
 keboola.utils
-git+https://github.com/keboola/python-http-client.git@feature-async
+git+https://github.com/keboola/python-http-client.git@feature/async
 https://bitbucket.org/kds_consulting_team/keboola-python-util-lib/get/0.2.10.zip#egg=kbc
 logging_gelf==0.0.18
 mock
